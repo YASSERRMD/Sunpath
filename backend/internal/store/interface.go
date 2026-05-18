@@ -2,7 +2,7 @@ package store
 
 import "time"
 
-type Store interface {
+type Storage interface {
 	Close() error
 
 	GetOSMExtract(bboxKey string) ([]BuildingRecord, error)

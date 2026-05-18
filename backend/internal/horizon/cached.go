@@ -6,10 +6,10 @@ import (
 )
 
 type CachedComputer struct {
-	Store *store.Store
+	Store store.Storage
 }
 
-func NewCachedComputer(st *store.Store) *CachedComputer {
+func NewCachedComputer(st store.Storage) *CachedComputer {
 	return &CachedComputer{Store: st}
 }
 
@@ -26,8 +26,8 @@ func (c *CachedComputer) computeCore(point geo.Point, observerHeight float64, bu
 	if terrain != nil {
 		terrainSuffix = "_dsm"
 	}
-	dataHash := computeDataHash(buildings) + terrainSuffix
-	ck := cacheKey(point.Lat, point.Lng, observerHeight, dataHash)
+	dataHash := ComputeDataHash(buildings) + terrainSuffix
+	ck := CacheKey(point.Lat, point.Lng, observerHeight, dataHash)
 
 	existing, err := c.Store.GetHorizonProfile(ck)
 	if err != nil {

@@ -28,7 +28,7 @@ func computeCore(point geo.Point, observerHeight float64, buildings []geo.Buildi
 		p.Confidence = 1.0
 		p.BuildingCount = 0
 		p.EstimatedCount = 0
-		p.BuildingDataHash = computeDataHash(buildings)
+		p.BuildingDataHash = ComputeDataHash(buildings)
 		return p
 	}
 
@@ -84,6 +84,6 @@ func computeCore(point geo.Point, observerHeight float64, buildings []geo.Buildi
 		p.Horizon[az] = maxAngle
 	}
 
-	p.BuildingDataHash = computeDataHash(buildings)
+	p.BuildingDataHash = ComputeDataHash(buildings)
 	return p
 }

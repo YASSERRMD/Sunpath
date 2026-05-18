@@ -20,7 +20,7 @@ type Profile struct {
 	UseDSM            bool         `json:"use_dsm"`
 }
 
-func computeDataHash(buildings []geo.Building) string {
+func ComputeDataHash(buildings []geo.Building) string {
 	h := sha256.New()
 	for _, b := range buildings {
 		for _, pt := range b.Footprint.Points {
@@ -31,7 +31,7 @@ func computeDataHash(buildings []geo.Building) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-func cacheKey(lat, lng, h float64, dataHash string) string {
+func CacheKey(lat, lng, h float64, dataHash string) string {
 	rLat := math.Round(lat*1000) / 1000
 	rLng := math.Round(lng*1000) / 1000
 	return fmt.Sprintf("%.3f_%.3f_%.1f_%s", rLat, rLng, h, dataHash[:16])
