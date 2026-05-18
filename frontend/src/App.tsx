@@ -5,6 +5,7 @@ import YearHeatmap from './components/YearHeatmap'
 import PinInspector from './components/PinInspector'
 import KeyDates from './components/KeyDates'
 import ConfidenceBanner from './components/ConfidenceBanner'
+import AboutPanel from './components/AboutPanel'
 import { fetchHorizon } from './lib/api'
 import { computeYear } from './lib/horizon'
 import { generateSummary } from './lib/summary'
@@ -177,6 +178,7 @@ function App() {
             </div>
           </>
         )}
+        <AboutPanel />
       </div>
     </div>
   )
