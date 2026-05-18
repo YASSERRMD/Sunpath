@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -67,7 +66,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("/api/horizon/job/", cors(s.handleHorizonJob))
 	mux.HandleFunc("/api/projects", cors(s.requireAuth(s.handleProjects)))
 	mux.HandleFunc("/api/projects/", cors(s.requireAuth(s.handleProjectByID)))
-	return withLogging(mux)
+	return observedHandler(mux)
 }
 
 type envelope struct {
@@ -119,10 +118,4 @@ func cors(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func withLogging(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		next.ServeHTTP(w, r)
-		log.Printf("%s %s %s", r.Method, r.URL.Path, time.Since(start))
-	})
-}
+
