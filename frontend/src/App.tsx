@@ -6,6 +6,7 @@ import PinInspector from './components/PinInspector'
 import KeyDates from './components/KeyDates'
 import ConfidenceBanner from './components/ConfidenceBanner'
 import AboutPanel from './components/AboutPanel'
+import EmbedPanel from './components/EmbedPanel'
 import ProjectsPanel from './components/ProjectsPanel'
 import ComparisonPanel from './components/ComparisonPanel'
 import TimeSlider from './components/TimeSlider'
@@ -61,6 +62,7 @@ export interface PinState {
 type LoadState = 'idle' | 'loading' | 'loaded' | 'error'
 
 function App() {
+  const [embed] = useState(() => new URLSearchParams(window.location.search).get('embed') === '1')
   const [pin, setPin] = useState<PinState | null>(null)
   const [height, setHeight] = useState(1.5)
   const [profile, setProfile] = useState<HorizonProfile | null>(null)
@@ -200,6 +202,31 @@ function App() {
   const summary = year && pin
     ? generateSummary(year, pin.lat, pin.lng, height, useDSM)
     : ''
+
+  if (embed) {
+    return (
+      <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+        <MapView
+          pin={pin}
+          onPinChange={handlePinChange}
+          sweepDate={sweepDate}
+          buildings={buildings}
+          gridCells={gridCells.length > 0 ? gridCells : undefined}
+          gridLoading={gridLoading}
+          onRectangle={handleRectangle}
+        />
+        {loadState === 'loaded' && summary && (
+          <div style={{
+            position: 'absolute', bottom: 20, left: 20, right: 20,
+            background: 'rgba(255,255,255,0.95)', padding: 12, borderRadius: 8,
+            boxShadow: '0 2px 12px rgba(0,0,0,0.15)', fontSize: 12, lineHeight: 1.4,
+          }}>
+            {summary}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div style={{ display: 'flex', width: '100vw', height: '100vh', overflow: 'hidden', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -373,6 +400,7 @@ function App() {
             }}
           />
         )}
+        <EmbedPanel />
         <AboutPanel />
       </div>
     </div>
