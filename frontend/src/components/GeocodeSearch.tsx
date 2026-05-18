@@ -1,13 +1,7 @@
 import { useState, useCallback, useRef } from 'react'
 import type { PinState } from '../App'
-
-interface GeocodeResult {
-  display_name: string
-  lat: string
-  lon: string
-  type: string
-  importance: number
-}
+import { fetchGeocode } from '../lib/api'
+import type { GeocodeResult } from '../lib/api'
 
 interface GeocodeSearchProps {
   onSelect: (pin: PinState) => void
@@ -27,9 +21,8 @@ export default function GeocodeSearch({ onSelect }: GeocodeSearchProps) {
     }
     setLoading(true)
     try {
-      const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`)
-      const body = await res.json()
-      setResults(body.data || [])
+      const data = await fetchGeocode(q)
+      setResults(data)
       setShowResults(true)
     } catch {
       setResults([])
