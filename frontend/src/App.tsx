@@ -8,6 +8,7 @@ import ConfidenceBanner from './components/ConfidenceBanner'
 import { fetchHorizon } from './lib/api'
 import { computeYear } from './lib/horizon'
 import { generateSummary } from './lib/summary'
+import { decodeState, updateURL } from './lib/urlstate'
 import type { HorizonProfile } from './lib/api'
 import type { YearResult, DayResult } from './lib/horizon'
 
@@ -26,6 +27,20 @@ function App() {
   const [loadState, setLoadState] = useState<LoadState>('idle')
   const [loadError, setLoadError] = useState('')
   const [selectedDay, setSelectedDay] = useState(170)
+
+  useEffect(() => {
+    const state = decodeState()
+    if (state) {
+      setPin({ lat: state.lat, lng: state.lng })
+      setHeight(state.h)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (pin) {
+      updateURL(pin.lat, pin.lng, height)
+    }
+  }, [pin, height])
 
   const handlePinChange = useCallback((p: PinState) => {
     setPin(p)
