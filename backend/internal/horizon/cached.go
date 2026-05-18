@@ -6,10 +6,10 @@ import (
 )
 
 type CachedComputer struct {
-	Store *store.Store
+	Store store.Storage
 }
 
-func NewCachedComputer(st *store.Store) *CachedComputer {
+func NewCachedComputer(st store.Storage) *CachedComputer {
 	return &CachedComputer{Store: st}
 }
 
