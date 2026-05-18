@@ -74,6 +74,7 @@ function App() {
   const [timeFrac, setTimeFrac] = useState(0.5)
   const [offline, setOffline] = useState(!navigator.onLine)
   const [useDSM, setUseDSM] = useState(false)
+  const [useVeg, setUseVeg] = useState(false)
   const [gridCells, setGridCells] = useState<GridCell[]>([])
   const [gridLoading, setGridLoading] = useState(false)
   const [comparePins, setComparePins] = useState<PinState[]>([])
@@ -144,7 +145,7 @@ function App() {
     setLoadError('')
 
     Promise.all([
-      fetchHorizon(pin.lat, pin.lng, height, useDSM),
+      fetchHorizon(pin.lat, pin.lng, height, useDSM, useVeg),
       fetchBuildings(pin.lat, pin.lng),
     ])
       .then(([p, b]) => {
@@ -161,7 +162,7 @@ function App() {
         }
         setLoadState('error')
       })
-  }, [pin, height, offline, useDSM])
+  }, [pin, height, offline, useDSM, useVeg])
 
   const handleAddToCompare = useCallback(() => {
     if (!pin) return
@@ -278,16 +279,29 @@ function App() {
           </div>
         )}
 
-        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: '#555' }}>
-            <input type="checkbox" checked={useDSM} onChange={(e) => setUseDSM(e.target.checked)} />
-            Include terrain shadows
-          </label>
-          {useDSM && (
-            <span style={{ fontSize: 11, color: '#e67e22', fontStyle: 'italic' }}>
-              Uses open elevation data; results may vary by region.
-            </span>
-          )}
+        <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: '#555' }}>
+              <input type="checkbox" checked={useDSM} onChange={(e) => setUseDSM(e.target.checked)} />
+              Include terrain shadows
+            </label>
+            {useDSM && (
+              <span style={{ fontSize: 11, color: '#e67e22', fontStyle: 'italic' }}>
+                Open elevation data
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: '#555' }}>
+              <input type="checkbox" checked={useVeg} onChange={(e) => setUseVeg(e.target.checked)} />
+              Include vegetation shadows
+            </label>
+            {useVeg && (
+              <span style={{ fontSize: 11, color: '#e67e22', fontStyle: 'italic' }}>
+                Tree data may be limited
+              </span>
+            )}
+          </div>
         </div>
 
         {pin && loadState === 'loaded' && profile && (

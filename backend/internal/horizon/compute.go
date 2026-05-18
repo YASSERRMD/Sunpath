@@ -14,6 +14,18 @@ func ComputeWithTerrain(point geo.Point, observerHeight float64, buildings []geo
 	return computeCore(point, observerHeight, buildings, terrain)
 }
 
+func ComputeWithVegetation(point geo.Point, observerHeight float64, buildings []geo.Building, terrain *[360]float64, vegHorizon *[360]float64) Profile {
+	profile := computeCore(point, observerHeight, buildings, terrain)
+	if vegHorizon != nil {
+		for az := 0; az < 360; az++ {
+			if vegHorizon[az] > profile.Horizon[az] {
+				profile.Horizon[az] = vegHorizon[az]
+			}
+		}
+	}
+	return profile
+}
+
 func computeCore(point geo.Point, observerHeight float64, buildings []geo.Building, terrain *[360]float64) Profile {
 	var p Profile
 	p.Lat = point.Lat

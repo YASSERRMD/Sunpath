@@ -22,9 +22,10 @@ interface ApiResponse<T> {
   error?: string
 }
 
-export async function fetchHorizon(lat: number, lng: number, h: number, useDSM?: boolean): Promise<HorizonProfile> {
+export async function fetchHorizon(lat: number, lng: number, h: number, useDSM?: boolean, useVeg?: boolean): Promise<HorizonProfile> {
   const params = new URLSearchParams({ lat: String(lat), lng: String(lng), h: String(h) })
   if (useDSM) params.set('dsm', 'true')
+  if (useVeg) params.set('veg', 'true')
   const res = await fetch(`/api/horizon?${params}`)
   const body: ApiResponse<HorizonProfile> = await res.json()
   if (body.error || !body.data) {

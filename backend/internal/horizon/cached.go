@@ -14,19 +14,26 @@ func NewCachedComputer(st store.Storage) *CachedComputer {
 }
 
 func (c *CachedComputer) Compute(point geo.Point, observerHeight float64, buildings []geo.Building) (Profile, error) {
-	return c.computeCore(point, observerHeight, buildings, nil)
+	return c.computeCore(point, observerHeight, buildings, nil, nil)
 }
 
 func (c *CachedComputer) ComputeWithTerrain(point geo.Point, observerHeight float64, buildings []geo.Building, terrain *[360]float64) (Profile, error) {
-	return c.computeCore(point, observerHeight, buildings, terrain)
+	return c.computeCore(point, observerHeight, buildings, terrain, nil)
 }
 
-func (c *CachedComputer) computeCore(point geo.Point, observerHeight float64, buildings []geo.Building, terrain *[360]float64) (Profile, error) {
-	terrainSuffix := ""
+func (c *CachedComputer) ComputeWithVegetation(point geo.Point, observerHeight float64, buildings []geo.Building, terrain *[360]float64, vegHorizon *[360]float64) (Profile, error) {
+	return c.computeCore(point, observerHeight, buildings, terrain, vegHorizon)
+}
+
+func (c *CachedComputer) computeCore(point geo.Point, observerHeight float64, buildings []geo.Building, terrain *[360]float64, vegHorizon *[360]float64) (Profile, error) {
+	suffix := ""
 	if terrain != nil {
-		terrainSuffix = "_dsm"
+		suffix = "_dsm"
 	}
-	dataHash := ComputeDataHash(buildings) + terrainSuffix
+	if vegHorizon != nil {
+		suffix += "_veg"
+	}
+	dataHash := ComputeDataHash(buildings) + suffix
 	ck := CacheKey(point.Lat, point.Lng, observerHeight, dataHash)
 
 	existing, err := c.Store.GetHorizonProfile(ck)
@@ -38,7 +45,9 @@ func (c *CachedComputer) computeCore(point geo.Point, observerHeight float64, bu
 	}
 
 	var profile Profile
-	if terrain != nil {
+	if vegHorizon != nil {
+		profile = ComputeWithVegetation(point, observerHeight, buildings, terrain, vegHorizon)
+	} else if terrain != nil {
 		profile = ComputeWithTerrain(point, observerHeight, buildings, terrain)
 	} else {
 		profile = Compute(point, observerHeight, buildings)
