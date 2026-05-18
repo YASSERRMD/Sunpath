@@ -7,12 +7,13 @@ import KeyDates from './components/KeyDates'
 import ConfidenceBanner from './components/ConfidenceBanner'
 import AboutPanel from './components/AboutPanel'
 import ProjectsPanel from './components/ProjectsPanel'
+import ComparisonPanel from './components/ComparisonPanel'
 import TimeSlider from './components/TimeSlider'
 import SunIndicator from './components/SunIndicator'
 import { fetchHorizon, fetchBuildings, fetchGrid } from './lib/api'
-import type { GridCell } from './lib/api'
+import type { GridCell, HorizonProfile } from './lib/api'
 import type { BuildingOutline } from './lib/api'
-import type { HorizonProfile } from './lib/api'
+import { fetchBatchHorizon } from './lib/api'
 import { generateSummary } from './lib/summary'
 import { decodeState, updateURL } from './lib/urlstate'
 import { useWorker } from './lib/useWorker'
@@ -73,6 +74,9 @@ function App() {
   const [useDSM, setUseDSM] = useState(false)
   const [gridCells, setGridCells] = useState<GridCell[]>([])
   const [gridLoading, setGridLoading] = useState(false)
+  const [comparePins, setComparePins] = useState<PinState[]>([])
+  const [compareResults, setCompareResults] = useState<HorizonProfile[]>([])
+  const [compareLoading, setCompareLoading] = useState(false)
 
   const handleRectangle = useCallback((bounds: { lat1: number; lng1: number; lat2: number; lng2: number }) => {
     setGridLoading(true)
@@ -156,6 +160,34 @@ function App() {
         setLoadState('error')
       })
   }, [pin, height, offline, useDSM])
+
+  const handleAddToCompare = useCallback(() => {
+    if (!pin) return
+    setComparePins((prev) => {
+      if (prev.find((p) => p.lat === pin.lat && p.lng === pin.lng)) return prev
+      return [...prev, { lat: pin.lat, lng: pin.lng }]
+    })
+  }, [pin])
+
+  const handleRemoveComparePin = useCallback((index: number) => {
+    setComparePins((prev) => prev.filter((_, i) => i !== index))
+    setCompareResults((prev) => prev.filter((_, i) => i !== index))
+  }, [])
+
+  const handleRunComparison = useCallback(async () => {
+    if (comparePins.length < 2) return
+    setCompareLoading(true)
+    try {
+      const results = await fetchBatchHorizon(
+        comparePins.map((p) => ({ lat: p.lat, lng: p.lng, height, use_dsm: useDSM }))
+      )
+      setCompareResults(results.filter((r) => !r.error).map((r) => r.data!))
+    } catch {
+      setCompareResults([])
+    } finally {
+      setCompareLoading(false)
+    }
+  }, [comparePins, height, useDSM])
 
   const dayResult: DayResult | null = year && selectedDay >= 0 && selectedDay < year.days.length
     ? year.days[selectedDay]
@@ -296,6 +328,23 @@ function App() {
               {summary}
             </div>
           </>
+        )}
+        {pin && (
+          <ComparisonPanel
+            pins={comparePins}
+            results={compareResults}
+            loading={compareLoading}
+            height={height}
+            onAdd={handleAddToCompare}
+            onRemove={handleRemoveComparePin}
+            onRun={handleRunComparison}
+            onNavigate={(lat, lng) => {
+              setPin({ lat, lng })
+              setProfile(null)
+              setYear(null)
+              setLoadState('idle')
+            }}
+          />
         )}
         <AboutPanel />
       </div>
