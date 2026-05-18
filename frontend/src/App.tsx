@@ -20,7 +20,7 @@ function App() {
       <div style={{ flex: 1, position: 'relative' }}>
         <MapView pin={pin} onPinChange={handlePinChange} />
       </div>
-      <SidePanel pin={pin} height={height} onHeightChange={setHeight} />
+      <SidePanel pin={pin} height={height} onHeightChange={setHeight} onPinChange={handlePinChange} />
     </div>
   )
 }

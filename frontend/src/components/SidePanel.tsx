@@ -1,12 +1,14 @@
 import type { PinState } from '../App'
+import GeocodeSearch from './GeocodeSearch'
 
 interface SidePanelProps {
   pin: PinState | null
   height: number
   onHeightChange: (h: number) => void
+  onPinChange: (p: PinState) => void
 }
 
-export default function SidePanel({ pin, height, onHeightChange }: SidePanelProps) {
+export default function SidePanel({ pin, height, onHeightChange, onPinChange }: SidePanelProps) {
   return (
     <div style={{
       width: 360,
@@ -20,6 +22,8 @@ export default function SidePanel({ pin, height, onHeightChange }: SidePanelProp
       <p style={{ fontSize: 13, color: '#666', margin: '0 0 24px 0' }}>
         Solar exposure analysis for any point
       </p>
+
+      <GeocodeSearch onSelect={onPinChange} />
 
       {!pin && (
         <p style={{ color: '#999', fontSize: 14 }}>
