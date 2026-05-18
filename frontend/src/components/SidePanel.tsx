@@ -1,3 +1,4 @@
+import React from 'react'
 import type { PinState } from '../App'
 import GeocodeSearch from './GeocodeSearch'
 
@@ -10,19 +11,7 @@ interface SidePanelProps {
 
 export default function SidePanel({ pin, height, onHeightChange, onPinChange }: SidePanelProps) {
   return (
-    <div style={{
-      width: 360,
-      background: '#fff',
-      borderLeft: '1px solid #e0e0e0',
-      padding: 24,
-      overflowY: 'auto',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-    }}>
-      <h1 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 4px 0' }}>Sunpath</h1>
-      <p style={{ fontSize: 13, color: '#666', margin: '0 0 24px 0' }}>
-        Solar exposure analysis for any point
-      </p>
-
+    <div>
       <GeocodeSearch onSelect={onPinChange} />
 
       {!pin && (
