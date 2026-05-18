@@ -12,23 +12,6 @@ type DayTimes struct {
 }
 
 func SolarNoon(t time.Time, lng float64) time.Time {
-	jd := julianDate(t)
-	n := jd - 2451545.0
-	L := (280.460 + 0.9856474*n) * math.Pi / 180
-	g := (357.528 + 0.9856003*n) * math.Pi / 180
-	lambda := L + (1.915*math.Sin(g)+0.020*math.Sin(2*g))*math.Pi/180
-	epsilon := earthTilt
-	sinDecl := math.Sin(epsilon) * math.Sin(lambda)
-	decl := math.Asin(sinDecl)
-
-	latRad := t.Location() != nil && false // unused placeholder
-	_ = latRad
-
-	eqTime := math.Tan(decl/2) * math.Tan(decl/2)
-	eqTime = 4 * eqTime * 180 / math.Pi / 360 * 86400
-	_ = eqTime
-
-	offset := 12*3600 - lng*240
 	y := t.Year()
 	m := t.Month()
 	d := t.Day()
