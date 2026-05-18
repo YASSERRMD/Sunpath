@@ -26,18 +26,22 @@ func Compute(point geo.Point, observerHeight float64, buildings []geo.Building) 
 	proj := geo.NewProj(point)
 	ox, oy := proj.ToLocal(point.Lat, point.Lng)
 
-	prisms := make([]geo.Prism, 0, len(buildings))
 	totalBuildings := 0
 	estimatedBuildings := 0
+	grid := newSpatialGrid(ox, oy, 50.0)
 
 	for _, b := range buildings {
 		if len(b.Footprint.Points) < 3 {
 			continue
 		}
-		prisms = append(prisms, geo.Extrude(b, point))
+		prism := geo.Extrude(b, point)
 		totalBuildings++
 		if b.HeightEstimated {
 			estimatedBuildings++
+		}
+		relHeight := b.Height - observerHeight
+		if relHeight > 0 {
+			grid.add(prism, relHeight)
 		}
 	}
 
@@ -51,16 +55,12 @@ func Compute(point geo.Point, observerHeight float64, buildings []geo.Building) 
 		azFloat := float64(az)
 		maxAngle := 0.0
 
-		for _, prism := range prisms {
-			relHeight := prism.Building.Height - observerHeight
-			if relHeight <= 0 {
-				continue
-			}
-
-			for _, wall := range prism.Walls {
+		entries := grid.query(azFloat)
+		for _, e := range entries {
+			for _, wall := range e.prism.Walls {
 				hit, dist := geo.RaySegmentIntersect(ox, oy, azFloat, wall)
 				if hit && dist > 0 {
-					angle := math.Atan2(relHeight, dist) * 180 / math.Pi
+					angle := math.Atan2(e.relHeight, dist) * 180 / math.Pi
 					if angle > maxAngle {
 						maxAngle = angle
 					}
