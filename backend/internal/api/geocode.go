@@ -36,14 +36,7 @@ func (s *Server) handleGeocode(w http.ResponseWriter, r *http.Request) {
 
 	nominatimURL := fmt.Sprintf("https://nominatim.openstreetmap.org/search?%s", params.Encode())
 
-	req, err := http.NewRequest("GET", nominatimURL, nil)
-	if err != nil {
-		writeError(w, 500, "failed to create geocode request")
-		return
-	}
-	req.Header.Set("User-Agent", "Sunpath/1.0 (solar analysis tool)")
-
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := s.geoClient.DoRequest("GET", nominatimURL, nil)
 	if err != nil {
 		writeError(w, 502, "geocode service unavailable")
 		return

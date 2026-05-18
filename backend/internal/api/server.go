@@ -17,6 +17,7 @@ type Server struct {
 	overpassURL   string
 	cachedClient  *osm.CachedClient
 	horizonComp   *horizon.CachedComputer
+	geoClient     *osm.RateLimitedClient
 }
 
 func NewServer(st *store.Store, overpassURL string) *Server {
@@ -28,6 +29,7 @@ func NewServer(st *store.Store, overpassURL string) *Server {
 		overpassURL:  overpassURL,
 		cachedClient: cc,
 		horizonComp:  hc,
+		geoClient:    osm.NewRateLimitedClient(2),
 	}
 }
 

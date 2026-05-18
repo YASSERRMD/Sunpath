@@ -6,22 +6,22 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"time"
 )
 
 type OverpassClient struct {
-	BaseURL    string
-	HTTPClient *http.Client
-	UserAgent  string
+	BaseURL      string
+	RateLimited  *RateLimitedClient
+	HTTPClient   *http.Client
+	UserAgent    string
 }
 
 func NewClient(baseURL string) *OverpassClient {
+	rl := NewRateLimitedClient(2)
 	return &OverpassClient{
-		BaseURL: baseURL,
-		HTTPClient: &http.Client{
-			Timeout: 30 * time.Second,
-		},
-		UserAgent: "Sunpath/1.0 (solar analysis tool)",
+		BaseURL:     baseURL,
+		RateLimited: rl,
+		HTTPClient:  rl.Client,
+		UserAgent:   "Sunpath/1.0 (solar analysis tool)",
 	}
 }
 
@@ -74,13 +74,7 @@ func (c *OverpassClient) FetchBuildings(minLat, minLng, maxLat, maxLng float64) 
 	params.Set("data", query)
 	reqURL := c.BaseURL + "?" + params.Encode()
 
-	req, err := http.NewRequest("POST", reqURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("creating request: %w", err)
-	}
-	req.Header.Set("User-Agent", c.UserAgent)
-
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.RateLimited.DoRequest("POST", reqURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("overpass request: %w", err)
 	}
