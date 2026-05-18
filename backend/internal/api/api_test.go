@@ -140,6 +140,47 @@ func TestCorsHeaders(t *testing.T) {
 	}
 }
 
+func TestGridMissingParams(t *testing.T) {
+	srv := newTestServer(t)
+	handler := srv.Routes()
+
+	tests := []struct {
+		name string
+		url  string
+		code int
+	}{
+		{"missing all", "/api/grid", 400},
+		{"missing lng1", "/api/grid?lat1=48.85", 400},
+		{"missing lat2", "/api/grid?lat1=48.85&lng1=2.35", 400},
+		{"invalid lat1", "/api/grid?lat1=abc&lng1=2.35&lat2=48.86&lng2=2.36", 400},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest("GET", tt.url, nil)
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code != tt.code {
+				t.Errorf("expected %d, got %d", tt.code, rec.Code)
+			}
+		})
+	}
+}
+
+func TestGridWrongMethod(t *testing.T) {
+	srv := newTestServer(t)
+	handler := srv.Routes()
+
+	req := httptest.NewRequest("POST", "/api/grid?lat1=48.85&lng1=2.35&lat2=48.86&lng2=2.36", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != 405 {
+		t.Errorf("expected 405, got %d", rec.Code)
+	}
+}
+
 func TestJSONErrorEnvelope(t *testing.T) {
 	srv := newTestServer(t)
 	handler := srv.Routes()
