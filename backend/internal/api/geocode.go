@@ -18,13 +18,13 @@ type GeocodeResult struct {
 
 func (s *Server) handleGeocode(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
-		writeError(w, 405, "method not allowed")
+		s.writeError(w, 405, "method not allowed")
 		return
 	}
 
 	q := r.URL.Query().Get("q")
 	if q == "" {
-		writeError(w, 400, "q (query) is required")
+		s.writeError(w, 400, "q (query) is required")
 		return
 	}
 
@@ -38,20 +38,20 @@ func (s *Server) handleGeocode(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := s.geoClient.DoRequest("GET", nominatimURL, nil)
 	if err != nil {
-		writeError(w, 502, "geocode service unavailable")
+		s.writeError(w, 502, "geocode service unavailable")
 		return
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		writeError(w, 502, "failed to read geocode response")
+		s.writeError(w, 502, "failed to read geocode response")
 		return
 	}
 
 	var results []GeocodeResult
 	if err := json.Unmarshal(body, &results); err != nil {
-		writeError(w, 502, "failed to parse geocode response")
+		s.writeError(w, 502, "failed to parse geocode response")
 		return
 	}
 

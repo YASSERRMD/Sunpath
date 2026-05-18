@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/yasserrmd/sunpath/backend/internal/horizon"
@@ -20,6 +21,7 @@ type Server struct {
 	cachedClient  *osm.CachedClient
 	horizonComp   *horizon.CachedComputer
 	geoClient     *osm.RateLimitedClient
+	errorCounts   map[string]*int64
 }
 
 func NewServer(st *store.Store, overpassURL string) *Server {
@@ -32,6 +34,7 @@ func NewServer(st *store.Store, overpassURL string) *Server {
 		cachedClient: cc,
 		horizonComp:  hc,
 		geoClient:    osm.NewRateLimitedClient(2),
+		errorCounts:  map[string]*int64{},
 	}
 }
 
@@ -56,6 +59,21 @@ func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(v)
+}
+
+func (s *Server) writeError(w http.ResponseWriter, status int, msg string) {
+	key := http.StatusText(status)
+	if key == "" {
+		key = "unknown"
+	}
+	counter, ok := s.errorCounts[key]
+	if !ok {
+		var zero int64
+		s.errorCounts[key] = &zero
+		counter = &zero
+	}
+	atomic.AddInt64(counter, 1)
+	writeJSON(w, status, envelope{Error: msg})
 }
 
 func writeError(w http.ResponseWriter, status int, msg string) {
