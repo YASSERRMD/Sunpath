@@ -22,6 +22,8 @@ interface DayResult {
   date: string
   dayOfYear: number
   totalMinutes: number
+  firstSunMinute: number
+  lastSunMinute: number
 }
 
 interface YearResult {
@@ -56,6 +58,8 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
   for (let doy = 0; doy < 365; doy++) {
     const date = new Date(Date.UTC(2025, 0, doy + 1))
     let totalMinutes = 0
+    let firstSunMinute = -1
+    let lastSunMinute = -1
     const hourRow: number[] = new Array(24).fill(0)
 
     for (let min = 0; min < 1440; min++) {
@@ -64,12 +68,14 @@ self.onmessage = (e: MessageEvent<WorkerInput>) => {
       const inSun = isInDirectSun(t)
       if (inSun) {
         totalMinutes++
+        if (firstSunMinute < 0) firstSunMinute = min
+        lastSunMinute = min
         const h = Math.floor(min / 60)
         hourRow[h] = 1
       }
     }
 
-    days.push({ date: date.toISOString(), dayOfYear: doy, totalMinutes })
+    days.push({ date: date.toISOString(), dayOfYear: doy, totalMinutes, firstSunMinute, lastSunMinute })
     grid.push(hourRow)
 
     if (totalMinutes > maxSunMinutes) {
