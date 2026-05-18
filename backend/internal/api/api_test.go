@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http/httptest"
 	"os"
@@ -12,14 +13,12 @@ import (
 
 func newTestServer(t *testing.T) *Server {
 	t.Helper()
-	dbPath := "test_sunpath.db"
-	st, err := store.Open(dbPath)
+	st, err := store.NewPostgresStore(context.Background(), os.Getenv("DATABASE_URL"))
 	if err != nil {
-		t.Fatalf("opening test store: %v", err)
+		t.Fatalf("opening store: %v", err)
 	}
 	t.Cleanup(func() {
 		st.Close()
-		os.Remove(dbPath)
 	})
 
 	return NewServer(st, "https://overpass-api.de/api/interpreter")
