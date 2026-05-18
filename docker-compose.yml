@@ -1,4 +1,30 @@
 services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: sunpath
+      POSTGRES_USER: sunpath
+      POSTGRES_PASSWORD: sunpath
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sunpath"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   backend:
     build:
       context: ./backend
@@ -6,9 +32,19 @@ services:
     ports:
       - "8080:8080"
     environment:
+      - DB_STORE=sqlite
+      - DB_PATH=/data/sunpath.db
+      - DATABASE_URL=postgres://sunpath:sunpath@postgres:5432/sunpath?sslmode=disable
+      - REDIS_URL=redis://redis:6379/0
       - OVERPASS_URL=${OVERPASS_URL:-https://overpass-api.de/api/interpreter}
       - TILE_STYLE_URL=${TILE_STYLE_URL:-https://demotiles.maplibre.org/style.json}
       - LISTEN_ADDR=:8080
+      - ELEVATION_API_URL=${ELEVATION_API_URL:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - sunpath-data:/data
 
@@ -21,3 +57,4 @@ services:
 
 volumes:
   sunpath-data:
+  pg-data:
