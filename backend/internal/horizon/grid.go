@@ -64,7 +64,7 @@ func (g *spatialGrid) query(az float64) []gridEntry {
 	steps := int(math.Ceil(maxDist / g.cellSize))
 
 	var result []gridEntry
-	seen := make(map[int]bool)
+	seen := make(map[int64]bool)
 
 	for s := 0; s <= steps; s++ {
 		cx := int(math.Floor((g.ox + dx*float64(s)*g.cellSize) / g.cellSize))
