@@ -25,4 +25,10 @@ type Storage interface {
 	DeleteExpiredSessions(ctx context.Context) error
 	CreateMagicLink(ctx context.Context, email, code string, expiresAt time.Time) error
 	ConsumeMagicLink(ctx context.Context, code string) (*string, error)
+
+	ListProjects(ctx context.Context, userID int64) ([]ProjectRecord, error)
+	GetProject(ctx context.Context, projectID, userID int64) (*ProjectRecord, error)
+	CreateProject(ctx context.Context, userID int64, name string, lat, lng, height float64, useDSM bool) (*ProjectRecord, error)
+	UpdateProject(ctx context.Context, projectID, userID int64, name string, lat, lng, height float64, useDSM bool) (*ProjectRecord, error)
+	DeleteProject(ctx context.Context, projectID, userID int64) error
 }
