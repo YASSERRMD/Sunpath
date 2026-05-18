@@ -66,6 +66,18 @@ func ensureTables(ctx context.Context, pool *pgxpool.Pool) error {
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_magic_links_code ON magic_links (code)`,
+		`CREATE TABLE IF NOT EXISTS saved_projects (
+			id BIGSERIAL PRIMARY KEY,
+			user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			name TEXT NOT NULL,
+			lat DOUBLE PRECISION NOT NULL,
+			lng DOUBLE PRECISION NOT NULL,
+			height DOUBLE PRECISION NOT NULL DEFAULT 1.5,
+			use_dsm BOOLEAN NOT NULL DEFAULT FALSE,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_saved_projects_user_id ON saved_projects (user_id)`,
 	}
 	for _, q := range sql {
 		if _, err := pool.Exec(ctx, q); err != nil {
@@ -262,6 +274,85 @@ func (s *PostgresStore) ConsumeMagicLink(ctx context.Context, code string) (*str
 		return nil, err
 	}
 	return &email, nil
+}
+
+func (s *PostgresStore) ListProjects(ctx context.Context, userID int64) ([]ProjectRecord, error) {
+	rows, err := s.pool.Query(ctx,
+		`SELECT id, user_id, name, lat, lng, height, use_dsm, created_at, updated_at
+		 FROM saved_projects WHERE user_id = $1 ORDER BY updated_at DESC`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var projects []ProjectRecord
+	for rows.Next() {
+		var p ProjectRecord
+		if err := rows.Scan(&p.ID, &p.UserID, &p.Name, &p.Lat, &p.Lng, &p.Height, &p.UseDSM, &p.CreatedAt, &p.UpdatedAt); err != nil {
+			return nil, err
+		}
+		projects = append(projects, p)
+	}
+	return projects, nil
+}
+
+func (s *PostgresStore) GetProject(ctx context.Context, projectID, userID int64) (*ProjectRecord, error) {
+	var p ProjectRecord
+	err := s.pool.QueryRow(ctx,
+		`SELECT id, user_id, name, lat, lng, height, use_dsm, created_at, updated_at
+		 FROM saved_projects WHERE id = $1 AND user_id = $2`,
+		projectID, userID).Scan(&p.ID, &p.UserID, &p.Name, &p.Lat, &p.Lng, &p.Height, &p.UseDSM, &p.CreatedAt, &p.UpdatedAt)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
+func (s *PostgresStore) CreateProject(ctx context.Context, userID int64, name string, lat, lng, height float64, useDSM bool) (*ProjectRecord, error) {
+	var p ProjectRecord
+	err := s.pool.QueryRow(ctx,
+		`INSERT INTO saved_projects (user_id, name, lat, lng, height, use_dsm)
+		 VALUES ($1, $2, $3, $4, $5, $6)
+		 RETURNING id, user_id, name, lat, lng, height, use_dsm, created_at, updated_at`,
+		userID, name, lat, lng, height, useDSM).
+		Scan(&p.ID, &p.UserID, &p.Name, &p.Lat, &p.Lng, &p.Height, &p.UseDSM, &p.CreatedAt, &p.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
+func (s *PostgresStore) UpdateProject(ctx context.Context, projectID, userID int64, name string, lat, lng, height float64, useDSM bool) (*ProjectRecord, error) {
+	var p ProjectRecord
+	err := s.pool.QueryRow(ctx,
+		`UPDATE saved_projects
+		 SET name = $1, lat = $2, lng = $3, height = $4, use_dsm = $5, updated_at = NOW()
+		 WHERE id = $6 AND user_id = $7
+		 RETURNING id, user_id, name, lat, lng, height, use_dsm, created_at, updated_at`,
+		name, lat, lng, height, useDSM, projectID, userID).
+		Scan(&p.ID, &p.UserID, &p.Name, &p.Lat, &p.Lng, &p.Height, &p.UseDSM, &p.CreatedAt, &p.UpdatedAt)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
+func (s *PostgresStore) DeleteProject(ctx context.Context, projectID, userID int64) error {
+	tag, err := s.pool.Exec(ctx,
+		"DELETE FROM saved_projects WHERE id = $1 AND user_id = $2", projectID, userID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
 }
 
 func (s *PostgresStore) Stats() CacheStats {

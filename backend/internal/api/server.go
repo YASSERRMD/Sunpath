@@ -62,6 +62,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("/api/auth/callback", cors(s.handleAuthCallback))
 	mux.HandleFunc("/api/horizon/job", cors(s.handleHorizonJob))
 	mux.HandleFunc("/api/horizon/job/", cors(s.handleHorizonJob))
+	mux.HandleFunc("/api/projects", cors(s.requireAuth(s.handleProjects)))
+	mux.HandleFunc("/api/projects/", cors(s.requireAuth(s.handleProjectByID)))
 	return withLogging(mux)
 }
 

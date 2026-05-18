@@ -37,6 +37,18 @@ type SessionRecord struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type ProjectRecord struct {
+	ID        int64     `json:"id"`
+	UserID    int64     `json:"user_id"`
+	Name      string    `json:"name"`
+	Lat       float64   `json:"lat"`
+	Lng       float64   `json:"lng"`
+	Height    float64   `json:"height"`
+	UseDSM    bool      `json:"use_dsm"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type CacheStats struct {
 	OSMExtracts      int   `json:"osm_extracts"`
 	HorizonProfiles  int   `json:"horizon_profiles"`
