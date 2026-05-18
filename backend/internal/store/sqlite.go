@@ -52,6 +52,52 @@ func (s *SQLiteStore) migrate() error {
 	return nil
 }
 
+type OSMRow struct {
+	Key          string
+	BuildingsJSON string
+	CreatedAt    string
+}
+
+func (s *SQLiteStore) GetAllOSMExtracts() ([]OSMRow, error) {
+	rows, err := s.db.Query("SELECT bbox_key, buildings, created_at FROM osm_extracts")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []OSMRow
+	for rows.Next() {
+		var r OSMRow
+		if err := rows.Scan(&r.Key, &r.BuildingsJSON, &r.CreatedAt); err != nil {
+			return nil, err
+		}
+		result = append(result, r)
+	}
+	return result, nil
+}
+
+type HorizonRow struct {
+	Key         string
+	ProfileJSON string
+	CreatedAt   string
+}
+
+func (s *SQLiteStore) GetAllHorizonProfiles() ([]HorizonRow, error) {
+	rows, err := s.db.Query("SELECT cache_key, profile, created_at FROM horizon_profiles")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []HorizonRow
+	for rows.Next() {
+		var r HorizonRow
+		if err := rows.Scan(&r.Key, &r.ProfileJSON, &r.CreatedAt); err != nil {
+			return nil, err
+		}
+		result = append(result, r)
+	}
+	return result, nil
+}
+
 func (s *SQLiteStore) GetOSMExtract(bboxKey string) ([]BuildingRecord, error) {
 	var data []byte
 	err := s.db.QueryRow("SELECT buildings FROM osm_extracts WHERE bbox_key = ?", bboxKey).Scan(&data)
