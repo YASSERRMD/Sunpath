@@ -18,7 +18,7 @@ import (
 const evictionTTL = 7 * 24 * time.Hour
 
 type Server struct {
-	store         *store.Store
+	store         store.Storage
 	overpassURL   string
 	cachedClient  *osm.CachedClient
 	horizonComp   *horizon.CachedComputer
@@ -27,7 +27,7 @@ type Server struct {
 	errorCounts   map[string]*int64
 }
 
-func NewServer(st *store.Store, overpassURL string) *Server {
+func NewServer(st store.Storage, overpassURL string) *Server {
 	oc := osm.NewClient(overpassURL)
 	cc := osm.NewCachedClient(oc, st, osm.DefaultConfig())
 	hc := horizon.NewCachedComputer(st)

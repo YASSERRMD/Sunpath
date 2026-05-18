@@ -1,5 +1,7 @@
 # Go
 backend/sunpathd
+backend/migratedb
+backend/paritycheck
 *.test
 *.out
 # Node

@@ -231,8 +231,8 @@ func TestComputeDataHashConsistency(t *testing.T) {
 		{OSMID: 1, Footprint: polygonFromPts([]geo.Point{{Lat: 0, Lng: 0}, {Lat: 1, Lng: 1}, {Lat: 0, Lng: 2}}), Height: 10},
 	}
 
-	h1 := computeDataHash(b1)
-	h2 := computeDataHash(b2)
+	h1 := ComputeDataHash(b1)
+	h2 := ComputeDataHash(b2)
 	if h1 != h2 {
 		t.Error("expected identical hashes for identical building data")
 	}

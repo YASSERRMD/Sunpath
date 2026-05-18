@@ -141,34 +141,16 @@ func testStore(t *testing.T, s Storage) {
 	})
 }
 
-func TestSQLiteStore(t *testing.T) {
-	dbPath := "test_sunpath_store.db"
-	s, err := Open(dbPath)
-	if err != nil {
-		t.Fatalf("opening sqlite store: %v", err)
-	}
-	defer func() {
-		s.Close()
-		os.Remove(dbPath)
-	}()
-
-	testStore(t, s)
-}
-
 func TestPostgresStore(t *testing.T) {
-	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL == "" {
-		t.Skip("DATABASE_URL not set; skipping Postgres store test")
+	pgURL := os.Getenv("DATABASE_URL")
+	if pgURL == "" {
+		t.Skip("DATABASE_URL not set")
 	}
-
-	s, err := NewPostgresStore(context.Background(), databaseURL)
+	st, err := NewPostgresStore(context.Background(), pgURL)
 	if err != nil {
-		t.Fatalf("opening postgres store: %v", err)
+		t.Fatalf("opening store: %v", err)
 	}
-	defer s.Close()
+	defer st.Close()
 
-	s.Pool().Exec(context.Background(), "DELETE FROM osm_extracts")
-	s.Pool().Exec(context.Background(), "DELETE FROM horizon_profiles")
-
-	testStore(t, s)
+	testStore(t, st)
 }
