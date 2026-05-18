@@ -6,6 +6,8 @@ import PinInspector from './components/PinInspector'
 import KeyDates from './components/KeyDates'
 import ConfidenceBanner from './components/ConfidenceBanner'
 import AboutPanel from './components/AboutPanel'
+import TimeSlider from './components/TimeSlider'
+import SunIndicator from './components/SunIndicator'
 import { fetchHorizon } from './lib/api'
 import { computeYear } from './lib/horizon'
 import { generateSummary } from './lib/summary'
@@ -28,6 +30,7 @@ function App() {
   const [loadState, setLoadState] = useState<LoadState>('idle')
   const [loadError, setLoadError] = useState('')
   const [selectedDay, setSelectedDay] = useState(170)
+  const [timeFrac, setTimeFrac] = useState(0.5)
   const [offline, setOffline] = useState(!navigator.onLine)
 
   useEffect(() => {
@@ -88,6 +91,10 @@ function App() {
   const dayResult: DayResult | null = year && selectedDay >= 0 && selectedDay < year.days.length
     ? year.days[selectedDay]
     : null
+
+  const sweepDate = pin
+    ? new Date(Date.UTC(2025, 0, selectedDay + 1, Math.floor(timeFrac * 24), Math.floor((timeFrac * 24 - Math.floor(timeFrac * 24)) * 60)))
+    : new Date()
 
   const summary = year && pin
     ? generateSummary(year, pin.lat, pin.lng, height)
@@ -158,6 +165,12 @@ function App() {
               onDayChange={setSelectedDay}
               days={year.days}
             />
+
+            <TimeSlider selectedDay={selectedDay} onTimeChange={setTimeFrac} />
+
+            {profile && pin && (
+              <SunIndicator date={sweepDate} lat={pin.lat} lng={pin.lng} profile={profile} />
+            )}
 
             <KeyDates
               bestDay={year.bestDay}
