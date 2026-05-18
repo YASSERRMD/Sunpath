@@ -1,0 +1,23 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - OVERPASS_URL=${OVERPASS_URL:-https://overpass-api.de/api/interpreter}
+      - TILE_STYLE_URL=${TILE_STYLE_URL:-https://demotiles.maplibre.org/style.json}
+      - LISTEN_ADDR=:8080
+    volumes:
+      - sunpath-data:/data
+
+  tileserver:
+    image: maptiler/tileserver-gl:v4
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./data/tiles:/data
+
+volumes:
+  sunpath-data:
