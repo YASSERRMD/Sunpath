@@ -180,6 +180,49 @@ func TestSingleBuildingShadow(t *testing.T) {
 	}
 }
 
+func TestDSMCorePathUnchanged(t *testing.T) {
+	point := geo.Point{Lat: 48.8566, Lng: 2.3522}
+	buildings := []geo.Building{
+		{OSMID: 1, Height: 30, Footprint: polygonFromPts([]geo.Point{
+			{Lat: 48.8560, Lng: 2.3515},
+			{Lat: 48.8560, Lng: 2.3525},
+			{Lat: 48.8565, Lng: 2.3525},
+			{Lat: 48.8565, Lng: 2.3515},
+		})},
+		{OSMID: 2, Height: 20, Footprint: polygonFromPts([]geo.Point{
+			{Lat: 48.8570, Lng: 2.3518},
+			{Lat: 48.8570, Lng: 2.3528},
+			{Lat: 48.8575, Lng: 2.3528},
+			{Lat: 48.8575, Lng: 2.3518},
+		})},
+	}
+
+	profile1 := Compute(point, 1.5, buildings)
+	profile2 := ComputeWithTerrain(point, 1.5, buildings, nil)
+
+	if profile1.UseDSM != false {
+		t.Error("expected UseDSM=false for core Compute")
+	}
+	if profile2.UseDSM != false {
+		t.Error("expected UseDSM=false for ComputeWithTerrain(nil)")
+	}
+	if profile1.BuildingCount != profile2.BuildingCount {
+		t.Errorf("BuildingCount differs: %d vs %d", profile1.BuildingCount, profile2.BuildingCount)
+	}
+	if profile1.Confidence != profile2.Confidence {
+		t.Errorf("Confidence differs: %v vs %v", profile1.Confidence, profile2.Confidence)
+	}
+	if profile1.BuildingDataHash != profile2.BuildingDataHash {
+		t.Errorf("BuildingDataHash differs: %s vs %s", profile1.BuildingDataHash, profile2.BuildingDataHash)
+	}
+	for az := 0; az < 360; az++ {
+		if profile1.Horizon[az] != profile2.Horizon[az] {
+			t.Errorf("Horizon[%d] differs: %.6f vs %.6f", az, profile1.Horizon[az], profile2.Horizon[az])
+			break
+		}
+	}
+}
+
 func TestComputeDataHashConsistency(t *testing.T) {
 	b1 := []geo.Building{
 		{OSMID: 1, Footprint: polygonFromPts([]geo.Point{{Lat: 0, Lng: 0}, {Lat: 1, Lng: 1}, {Lat: 0, Lng: 2}}), Height: 10},
