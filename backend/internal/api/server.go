@@ -12,6 +12,8 @@ import (
 	"github.com/yasserrmd/sunpath/backend/internal/store"
 )
 
+const evictionTTL = 7 * 24 * time.Hour
+
 type Server struct {
 	store        *store.Store
 	overpassURL   string
@@ -39,6 +41,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("/api/horizon", cors(s.handleHorizon))
 	mux.HandleFunc("/api/buildings", cors(s.handleBuildings))
 	mux.HandleFunc("/api/grid", cors(s.handleGrid))
+	mux.HandleFunc("/api/metrics", cors(s.handleMetrics))
+	mux.HandleFunc("/api/cache/evict", cors(s.handleCacheEvict))
 	mux.HandleFunc("/api/geocode", cors(s.handleGeocode))
 	return withLogging(mux)
 }
