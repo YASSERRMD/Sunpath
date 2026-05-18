@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"sync/atomic"
 	"time"
 
+	"github.com/yasserrmd/sunpath/backend/internal/dsm"
 	"github.com/yasserrmd/sunpath/backend/internal/horizon"
 	"github.com/yasserrmd/sunpath/backend/internal/osm"
 	"github.com/yasserrmd/sunpath/backend/internal/store"
@@ -16,11 +18,12 @@ import (
 const evictionTTL = 7 * 24 * time.Hour
 
 type Server struct {
-	store        *store.Store
+	store         *store.Store
 	overpassURL   string
 	cachedClient  *osm.CachedClient
 	horizonComp   *horizon.CachedComputer
 	geoClient     *osm.RateLimitedClient
+	elevClient    *dsm.ElevationClient
 	errorCounts   map[string]*int64
 }
 
@@ -28,12 +31,14 @@ func NewServer(st *store.Store, overpassURL string) *Server {
 	oc := osm.NewClient(overpassURL)
 	cc := osm.NewCachedClient(oc, st, osm.DefaultConfig())
 	hc := horizon.NewCachedComputer(st)
+	elevURL := os.Getenv("ELEVATION_API_URL")
 	return &Server{
 		store:        st,
 		overpassURL:  overpassURL,
 		cachedClient: cc,
 		horizonComp:  hc,
 		geoClient:    osm.NewRateLimitedClient(2),
+		elevClient:   dsm.NewElevationClient(elevURL),
 		errorCounts:  map[string]*int64{},
 	}
 }

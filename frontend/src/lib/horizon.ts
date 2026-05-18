@@ -19,6 +19,8 @@ export interface DayResult {
   date: Date
   dayOfYear: number
   totalMinutes: number
+  firstSunMinute: number
+  lastSunMinute: number
   sunStates: { time: Date; inSun: boolean }[]
 }
 
@@ -44,21 +46,29 @@ export function computeDay(
   end.setUTCDate(end.getUTCDate() + 1)
 
   let totalMinutes = 0
+  let firstSunMinute = -1
+  let lastSunMinute = -1
   const sunStates: { time: Date; inSun: boolean }[] = []
 
   const cursor = new Date(start)
+  let minOfDay = 0
   while (cursor < end) {
     const inSun = isInDirectSun(cursor, lat, lng, profile)
     sunStates.push({ time: new Date(cursor), inSun })
-    if (inSun) totalMinutes++
+    if (inSun) {
+      totalMinutes++
+      if (firstSunMinute < 0) firstSunMinute = minOfDay
+      lastSunMinute = minOfDay
+    }
     cursor.setUTCMinutes(cursor.getUTCMinutes() + 1)
+    minOfDay++
   }
 
   const dayOfYear = Math.floor(
     (start.getTime() - new Date(start.getUTCFullYear(), 0, 0).getTime()) / 86400000
   )
 
-  return { date: start, dayOfYear, totalMinutes, sunStates }
+  return { date: start, dayOfYear, totalMinutes, firstSunMinute, lastSunMinute, sunStates }
 }
 
 export function computeYear(

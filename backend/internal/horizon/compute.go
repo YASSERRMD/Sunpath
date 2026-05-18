@@ -7,12 +7,21 @@ import (
 )
 
 func Compute(point geo.Point, observerHeight float64, buildings []geo.Building) Profile {
+	return computeCore(point, observerHeight, buildings, nil)
+}
+
+func ComputeWithTerrain(point geo.Point, observerHeight float64, buildings []geo.Building, terrain *[360]float64) Profile {
+	return computeCore(point, observerHeight, buildings, terrain)
+}
+
+func computeCore(point geo.Point, observerHeight float64, buildings []geo.Building, terrain *[360]float64) Profile {
 	var p Profile
 	p.Lat = point.Lat
 	p.Lng = point.Lng
 	p.ObserverHeight = observerHeight
+	p.UseDSM = terrain != nil
 
-	if len(buildings) == 0 {
+	if len(buildings) == 0 && terrain == nil {
 		for az := 0; az < 360; az++ {
 			p.Horizon[az] = 0
 		}
@@ -54,6 +63,10 @@ func Compute(point geo.Point, observerHeight float64, buildings []geo.Building) 
 	for az := 0; az < 360; az++ {
 		azFloat := float64(az)
 		maxAngle := 0.0
+
+		if terrain != nil && terrain[az] > maxAngle {
+			maxAngle = terrain[az]
+		}
 
 		entries := grid.query(azFloat)
 		for _, e := range entries {

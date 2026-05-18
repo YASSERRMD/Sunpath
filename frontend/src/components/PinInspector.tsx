@@ -59,7 +59,7 @@ export default function PinInspector({ dayResult, selectedDay, onDayChange, days
         </p>
         {dayResult && (
           <p style={{ fontSize: 13, color: '#666', margin: 0 }}>
-            First sun: {formatMinute(dayResult)} | Last sun: {formatLastSun(dayResult)}
+            First sun: {formatFirstSun(dayResult)} | Last sun: {formatLastSun(dayResult)}
           </p>
         )}
       </div>
@@ -86,17 +86,16 @@ export default function PinInspector({ dayResult, selectedDay, onDayChange, days
   )
 }
 
-function formatMinute(day: DayResult): string {
-  const sun = day.sunStates.find(s => s.inSun)
-  if (!sun) return '--:--'
-  return sun.time.toISOString().slice(11, 16)
+function formatFirstSun(day: DayResult): string {
+  if (day.firstSunMinute < 0) return '--:--'
+  return `${pad(Math.floor(day.firstSunMinute / 60))}:${pad(day.firstSunMinute % 60)}`
 }
 
 function formatLastSun(day: DayResult): string {
-  let last: { time: Date; inSun: boolean } | null = null
-  for (const s of day.sunStates) {
-    if (s.inSun) last = s
-  }
-  if (!last) return '--:--'
-  return last.time.toISOString().slice(11, 16)
+  if (day.lastSunMinute < 0) return '--:--'
+  return `${pad(Math.floor(day.lastSunMinute / 60))}:${pad(day.lastSunMinute % 60)}`
+}
+
+function pad(n: number): string {
+  return n < 10 ? '0' + n : String(n)
 }

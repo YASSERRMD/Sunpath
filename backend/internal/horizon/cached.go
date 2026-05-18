@@ -14,7 +14,19 @@ func NewCachedComputer(st *store.Store) *CachedComputer {
 }
 
 func (c *CachedComputer) Compute(point geo.Point, observerHeight float64, buildings []geo.Building) (Profile, error) {
-	dataHash := computeDataHash(buildings)
+	return c.computeCore(point, observerHeight, buildings, nil)
+}
+
+func (c *CachedComputer) ComputeWithTerrain(point geo.Point, observerHeight float64, buildings []geo.Building, terrain *[360]float64) (Profile, error) {
+	return c.computeCore(point, observerHeight, buildings, terrain)
+}
+
+func (c *CachedComputer) computeCore(point geo.Point, observerHeight float64, buildings []geo.Building, terrain *[360]float64) (Profile, error) {
+	terrainSuffix := ""
+	if terrain != nil {
+		terrainSuffix = "_dsm"
+	}
+	dataHash := computeDataHash(buildings) + terrainSuffix
 	ck := cacheKey(point.Lat, point.Lng, observerHeight, dataHash)
 
 	existing, err := c.Store.GetHorizonProfile(ck)
@@ -25,7 +37,12 @@ func (c *CachedComputer) Compute(point geo.Point, observerHeight float64, buildi
 		return profileFromRecord(*existing), nil
 	}
 
-	profile := Compute(point, observerHeight, buildings)
+	var profile Profile
+	if terrain != nil {
+		profile = ComputeWithTerrain(point, observerHeight, buildings, terrain)
+	} else {
+		profile = Compute(point, observerHeight, buildings)
+	}
 	profile.BuildingDataHash = dataHash
 
 	rec := profileToRecord(profile)
@@ -46,6 +63,7 @@ func profileToRecord(p Profile) store.HorizonRecord {
 		BuildCount: p.BuildingCount,
 		EstCount:   p.EstimatedCount,
 		DataHash:   p.BuildingDataHash,
+		UseDSM:     p.UseDSM,
 	}
 }
 
@@ -59,5 +77,6 @@ func profileFromRecord(r store.HorizonRecord) Profile {
 	p.BuildingCount = r.BuildCount
 	p.EstimatedCount = r.EstCount
 	p.BuildingDataHash = r.DataHash
+	p.UseDSM = r.UseDSM
 	return p
 }

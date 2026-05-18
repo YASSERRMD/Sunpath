@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/yasserrmd/sunpath/backend/internal/dsm"
 	"github.com/yasserrmd/sunpath/backend/internal/geo"
+	"github.com/yasserrmd/sunpath/backend/internal/horizon"
 	"github.com/yasserrmd/sunpath/backend/internal/osm"
 )
 
@@ -48,6 +50,8 @@ func (s *Server) handleHorizon(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	useDSM := r.URL.Query().Get("dsm") == "true"
+
 	point := geo.Point{Lat: lat, Lng: lng}
 
 	buildings, err := fetchBuildingsAround(point, s.cachedClient)
@@ -57,7 +61,24 @@ func (s *Server) handleHorizon(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	profile, err := s.horizonComp.Compute(point, observerH, buildings)
+	var profile horizon.Profile
+	if useDSM {
+		obsElev, err := s.elevClient.GetElevation(lat, lng)
+		if err != nil {
+			log.Printf("fetching elevation: %v", err)
+			s.writeError(w, 502, "failed to fetch elevation data")
+			return
+		}
+		terrain, err := dsm.ComputeTerrainHorizon(s.elevClient, lat, lng, observerH, obsElev)
+		if err != nil {
+			log.Printf("computing terrain horizon: %v", err)
+			s.writeError(w, 500, "failed to compute terrain horizon")
+			return
+		}
+		profile, err = s.horizonComp.ComputeWithTerrain(point, observerH, buildings, &terrain.Horizon)
+	} else {
+		profile, err = s.horizonComp.Compute(point, observerH, buildings)
+	}
 	if err != nil {
 		log.Printf("computing horizon: %v", err)
 		s.writeError(w, 500, "failed to compute horizon")

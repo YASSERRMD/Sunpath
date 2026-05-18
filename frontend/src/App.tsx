@@ -20,6 +20,8 @@ interface WorkerDayResult {
   date: string
   dayOfYear: number
   totalMinutes: number
+  firstSunMinute: number
+  lastSunMinute: number
 }
 
 interface WorkerYearResult {
@@ -35,6 +37,8 @@ interface DayResult {
   date: Date
   dayOfYear: number
   totalMinutes: number
+  firstSunMinute: number
+  lastSunMinute: number
   sunStates: { time: Date; inSun: boolean }[]
 }
 
@@ -65,6 +69,7 @@ function App() {
   const [selectedDay, setSelectedDay] = useState(170)
   const [timeFrac, setTimeFrac] = useState(0.5)
   const [offline, setOffline] = useState(!navigator.onLine)
+  const [useDSM, setUseDSM] = useState(false)
   const [gridCells, setGridCells] = useState<GridCell[]>([])
   const [gridLoading, setGridLoading] = useState(false)
 
@@ -115,6 +120,8 @@ function App() {
         date: new Date(d.date),
         dayOfYear: d.dayOfYear,
         totalMinutes: d.totalMinutes,
+        firstSunMinute: d.firstSunMinute,
+        lastSunMinute: d.lastSunMinute,
         sunStates: [],
       }))
       const yearResult: YearResult = { ...workerData, days }
@@ -130,7 +137,7 @@ function App() {
     setLoadError('')
 
     Promise.all([
-      fetchHorizon(pin.lat, pin.lng, height),
+      fetchHorizon(pin.lat, pin.lng, height, useDSM),
       fetchBuildings(pin.lat, pin.lng),
     ])
       .then(([p, b]) => {
@@ -147,7 +154,7 @@ function App() {
         }
         setLoadState('error')
       })
-  }, [pin, height, offline])
+  }, [pin, height, offline, useDSM])
 
   const dayResult: DayResult | null = year && selectedDay >= 0 && selectedDay < year.days.length
     ? year.days[selectedDay]
@@ -158,7 +165,7 @@ function App() {
     : new Date()
 
   const summary = year && pin
-    ? generateSummary(year, pin.lat, pin.lng, height)
+    ? generateSummary(year, pin.lat, pin.lng, height, useDSM)
     : ''
 
   return (
@@ -193,6 +200,18 @@ function App() {
             You are offline. Sunpath needs a network connection to fetch building data.
           </div>
         )}
+
+        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: '#555' }}>
+            <input type="checkbox" checked={useDSM} onChange={(e) => setUseDSM(e.target.checked)} />
+            Include terrain shadows
+          </label>
+          {useDSM && (
+            <span style={{ fontSize: 11, color: '#e67e22', fontStyle: 'italic' }}>
+              Uses open elevation data; results may vary by region.
+            </span>
+          )}
+        </div>
 
         {loadState === 'loading' && (
           <div style={{ padding: '20px 0', textAlign: 'center', color: '#999', fontSize: 14 }}>
