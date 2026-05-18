@@ -59,6 +59,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("/api/cache/evict", cors(s.handleCacheEvict))
 	mux.HandleFunc("/api/geocode", cors(s.handleGeocode))
 	mux.HandleFunc("/api/horizon/batch", cors(s.handleBatchHorizon))
+	mux.HandleFunc("/api/export/csv", cors(s.handleExportCSV))
+	mux.HandleFunc("/api/export/pdf", cors(s.handleExportPDF))
 	mux.HandleFunc("/api/auth/login", cors(s.handleAuthLogin))
 	mux.HandleFunc("/api/auth/callback", cors(s.handleAuthCallback))
 	mux.HandleFunc("/api/horizon/job", cors(s.handleHorizonJob))
