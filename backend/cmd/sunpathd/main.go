@@ -15,7 +15,7 @@ import (
 
 func main() {
 	listenAddr := getEnv("LISTEN_ADDR", ":8080")
-	dbStore := getEnv("DB_STORE", "sqlite")
+	dbStore := getEnv("DB_STORE", "postgres")
 	dbPath := getEnv("DB_PATH", "sunpath.db")
 	databaseURL := getEnv("DATABASE_URL", "postgres://sunpath:sunpath@localhost:5432/sunpath?sslmode=disable")
 	overpassURL := getEnv("OVERPASS_URL", "https://overpass-api.de/api/interpreter")
