@@ -56,3 +56,24 @@ export async function fetchGeocode(query: string): Promise<GeocodeResult[]> {
   }
   return body.data
 }
+
+export interface GridCell {
+  lat: number
+  lng: number
+  sun_minutes: number
+}
+
+export async function fetchGrid(lat1: number, lng1: number, lat2: number, lng2: number, h: number, res?: number): Promise<GridCell[]> {
+  const params = new URLSearchParams({
+    lat1: String(lat1), lng1: String(lng1),
+    lat2: String(lat2), lng2: String(lng2),
+    h: String(h),
+  })
+  if (res) params.set('res', String(res))
+  const result = await fetch(`/api/grid?${params}`)
+  const body: ApiResponse<GridCell[]> = await result.json()
+  if (body.error || !body.data) {
+    throw new Error(body.error || 'failed to fetch grid')
+  }
+  return body.data
+}

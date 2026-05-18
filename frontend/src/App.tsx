@@ -8,7 +8,8 @@ import ConfidenceBanner from './components/ConfidenceBanner'
 import AboutPanel from './components/AboutPanel'
 import TimeSlider from './components/TimeSlider'
 import SunIndicator from './components/SunIndicator'
-import { fetchHorizon, fetchBuildings } from './lib/api'
+import { fetchHorizon, fetchBuildings, fetchGrid } from './lib/api'
+import type { GridCell } from './lib/api'
 import type { BuildingOutline } from './lib/api'
 import { computeYear } from './lib/horizon'
 import { generateSummary } from './lib/summary'
@@ -34,6 +35,16 @@ function App() {
   const [selectedDay, setSelectedDay] = useState(170)
   const [timeFrac, setTimeFrac] = useState(0.5)
   const [offline, setOffline] = useState(!navigator.onLine)
+  const [gridCells, setGridCells] = useState<GridCell[]>([])
+  const [gridLoading, setGridLoading] = useState(false)
+
+  const handleRectangle = useCallback((bounds: { lat1: number; lng1: number; lat2: number; lng2: number }) => {
+    setGridLoading(true)
+    fetchGrid(bounds.lat1, bounds.lng1, bounds.lat2, bounds.lng2, height)
+      .then(setGridCells)
+      .catch(() => {})
+      .finally(() => setGridLoading(false))
+  }, [height])
 
   useEffect(() => {
     const handleOffline = () => setOffline(true)
@@ -109,7 +120,15 @@ function App() {
   return (
     <div style={{ display: 'flex', width: '100vw', height: '100vh', overflow: 'hidden', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <div style={{ flex: 1, position: 'relative' }}>
-        <MapView pin={pin} onPinChange={handlePinChange} sweepDate={sweepDate} buildings={buildings} />
+        <MapView
+          pin={pin}
+          onPinChange={handlePinChange}
+          sweepDate={sweepDate}
+          buildings={buildings}
+          gridCells={gridCells.length > 0 ? gridCells : undefined}
+          gridLoading={gridLoading}
+          onRectangle={handleRectangle}
+        />
       </div>
       <div style={{
         width: 400,
