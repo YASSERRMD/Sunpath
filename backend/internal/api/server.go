@@ -2,21 +2,18 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/yasserrmd/sunpath/backend/internal/geo"
 	"github.com/yasserrmd/sunpath/backend/internal/horizon"
 	"github.com/yasserrmd/sunpath/backend/internal/osm"
 	"github.com/yasserrmd/sunpath/backend/internal/store"
 )
 
 type Server struct {
-	store         *store.Store
+	store        *store.Store
 	overpassURL   string
 	cachedClient  *osm.CachedClient
 	horizonComp   *horizon.CachedComputer
