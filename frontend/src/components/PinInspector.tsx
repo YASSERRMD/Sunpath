@@ -74,6 +74,7 @@ export default function PinInspector({ dayResult, selectedDay, onDayChange, days
           max={364}
           value={selectedDay}
           onChange={(e) => onDayChange(parseInt(e.target.value))}
+          aria-label={`Select day of year. Currently day ${selectedDay + 1}`}
           style={{ width: '100%', marginTop: 4 }}
         />
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#999' }}>
