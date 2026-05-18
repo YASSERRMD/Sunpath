@@ -9,36 +9,30 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/pressly/goose/v3"
 	"github.com/yasserrmd/sunpath/backend/internal/api"
 	"github.com/yasserrmd/sunpath/backend/internal/store"
 )
 
 func main() {
 	listenAddr := getEnv("LISTEN_ADDR", ":8080")
+	dbStore := getEnv("DB_STORE", "sqlite")
 	dbPath := getEnv("DB_PATH", "sunpath.db")
+	databaseURL := getEnv("DATABASE_URL", "postgres://sunpath:sunpath@localhost:5432/sunpath?sslmode=disable")
 	overpassURL := getEnv("OVERPASS_URL", "https://overpass-api.de/api/interpreter")
 
-	dbStore := getEnv("DB_STORE", "sqlite")
-	runMigrations := getEnv("DB_RUN_MIGRATIONS", "false")
-
-	if dbStore == "postgres" || runMigrations == "true" {
-		databaseURL := getEnv("DATABASE_URL", "postgres://sunpath:sunpath@localhost:5432/sunpath?sslmode=disable")
-		pool, err := pgxpool.New(context.Background(), databaseURL)
+	var st store.Storage
+	if dbStore == "postgres" {
+		var err error
+		st, err = store.NewPostgresStore(context.Background(), databaseURL)
 		if err != nil {
-			log.Fatalf("connecting to postgres: %v", err)
+			log.Fatalf("opening postgres store: %v", err)
 		}
-		defer pool.Close()
-		if err := goose.RunContext(context.Background(), "up", pool, "migrations"); err != nil {
-			log.Fatalf("running migrations: %v", err)
+	} else {
+		var err error
+		st, err = store.Open(dbPath)
+		if err != nil {
+			log.Fatalf("opening store: %v", err)
 		}
-		log.Println("migrations complete")
-	}
-
-	st, err := store.Open(dbPath)
-	if err != nil {
-		log.Fatalf("opening store: %v", err)
 	}
 	defer st.Close()
 
