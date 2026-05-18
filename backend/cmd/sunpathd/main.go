@@ -15,12 +15,24 @@ import (
 
 func main() {
 	listenAddr := getEnv("LISTEN_ADDR", ":8080")
+	dbStore := getEnv("DB_STORE", "sqlite")
 	dbPath := getEnv("DB_PATH", "sunpath.db")
+	databaseURL := getEnv("DATABASE_URL", "postgres://sunpath:sunpath@localhost:5432/sunpath?sslmode=disable")
 	overpassURL := getEnv("OVERPASS_URL", "https://overpass-api.de/api/interpreter")
 
-	st, err := store.Open(dbPath)
-	if err != nil {
-		log.Fatalf("opening store: %v", err)
+	var st store.Storage
+	if dbStore == "postgres" {
+		var err error
+		st, err = store.NewPostgresStore(context.Background(), databaseURL)
+		if err != nil {
+			log.Fatalf("opening postgres store: %v", err)
+		}
+	} else {
+		var err error
+		st, err = store.Open(dbPath)
+		if err != nil {
+			log.Fatalf("opening store: %v", err)
+		}
 	}
 	defer st.Close()
 
