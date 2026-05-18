@@ -11,7 +11,7 @@ func julianDate(t time.Time) float64 {
 	return float64(t.Unix())/86400.0 + 2440587.5
 }
 
-func solarPosition(t time.Time, lat, lng float64) (azimuth, elevation float64) {
+func SolarPosition(t time.Time, lat, lng float64) (azimuth, elevation float64) {
 	jd := julianDate(t)
 	n := jd - 2451545.0
 
