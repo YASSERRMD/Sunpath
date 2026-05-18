@@ -263,6 +263,33 @@ function App() {
           )}
         </div>
 
+        {pin && loadState === 'loaded' && profile && (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            <a
+              href={`/api/export/csv?lat=${pin.lat}&lng=${pin.lng}&h=${height}`}
+              download
+              style={{
+                flex: 1, padding: '8px 12px', fontSize: 13, textAlign: 'center',
+                border: '1px solid #3498db', borderRadius: 4, background: '#f0f8ff',
+                color: '#3498db', cursor: 'pointer', textDecoration: 'none',
+              }}
+            >
+              Download CSV
+            </a>
+            <a
+              href={`/api/export/pdf?lat=${pin.lat}&lng=${pin.lng}&h=${height}`}
+              download
+              style={{
+                flex: 1, padding: '8px 12px', fontSize: 13, textAlign: 'center',
+                border: '1px solid #e67e22', borderRadius: 4, background: '#fff8f0',
+                color: '#e67e22', cursor: 'pointer', textDecoration: 'none',
+              }}
+            >
+              Download Report
+            </a>
+          </div>
+        )}
+
         {loadState === 'loading' && (
           <div style={{ padding: '20px 0', textAlign: 'center', color: '#999', fontSize: 14 }}>
             Fetching building data and computing horizon...
