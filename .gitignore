@@ -1,0 +1,17 @@
+# Go
+backend/sunpathd
+*.test
+*.out
+# Node
+frontend/node_modules/
+frontend/dist/
+# Local data / cache
+*.sqlite
+*.sqlite-*
+data/
+.env
+.env.local
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
