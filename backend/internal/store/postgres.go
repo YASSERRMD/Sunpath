@@ -21,7 +21,58 @@ func NewPostgresStore(ctx context.Context, databaseURL string) (*PostgresStore, 
 	if err != nil {
 		return nil, err
 	}
+	if err := ensureTables(ctx, pool); err != nil {
+		pool.Close()
+		return nil, err
+	}
 	return &PostgresStore{pool: pool}, nil
+}
+
+func ensureTables(ctx context.Context, pool *pgxpool.Pool) error {
+	sql := []string{
+		`CREATE TABLE IF NOT EXISTS osm_extracts (
+			bbox_key TEXT PRIMARY KEY,
+			buildings BYTEA NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`,
+		`CREATE TABLE IF NOT EXISTS horizon_profiles (
+			cache_key TEXT PRIMARY KEY,
+			profile BYTEA NOT NULL,
+			lat DOUBLE PRECISION NOT NULL DEFAULT 0,
+			lng DOUBLE PRECISION NOT NULL DEFAULT 0,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`,
+		`CREATE TABLE IF NOT EXISTS users (
+			id BIGSERIAL PRIMARY KEY,
+			email TEXT NOT NULL UNIQUE,
+			name TEXT NOT NULL DEFAULT '',
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_users_email ON users (email)`,
+		`CREATE TABLE IF NOT EXISTS auth_sessions (
+			id BIGSERIAL PRIMARY KEY,
+			user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			token_hash TEXT NOT NULL UNIQUE,
+			expires_at TIMESTAMPTZ NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_auth_sessions_token_hash ON auth_sessions (token_hash)`,
+		`CREATE TABLE IF NOT EXISTS magic_links (
+			id BIGSERIAL PRIMARY KEY,
+			email TEXT NOT NULL,
+			code TEXT NOT NULL UNIQUE,
+			used BOOLEAN NOT NULL DEFAULT FALSE,
+			expires_at TIMESTAMPTZ NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_magic_links_code ON magic_links (code)`,
+	}
+	for _, q := range sql {
+		if _, err := pool.Exec(ctx, q); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *PostgresStore) Pool() *pgxpool.Pool {
