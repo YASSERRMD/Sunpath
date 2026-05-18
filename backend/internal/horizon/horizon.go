@@ -17,6 +17,7 @@ type Profile struct {
 	BuildingCount     int          `json:"building_count"`
 	EstimatedCount    int          `json:"estimated_count"`
 	BuildingDataHash  string       `json:"data_hash"`
+	UseDSM            bool         `json:"use_dsm"`
 }
 
 func computeDataHash(buildings []geo.Building) string {

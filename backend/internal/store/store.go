@@ -25,6 +25,7 @@ type HorizonRecord struct {
 	BuildCount int       `json:"build_count"`
 	EstCount   int       `json:"est_count"`
 	DataHash   string    `json:"data_hash"`
+	UseDSM     bool      `json:"use_dsm"`
 	CreatedAt  time.Time `json:"created_at"`
 }
 
