@@ -64,6 +64,71 @@ export interface GridCell {
   sun_minutes: number
 }
 
+export interface ProjectRecord {
+  id: number
+  user_id: number
+  name: string
+  lat: number
+  lng: number
+  height: number
+  use_dsm: boolean
+  created_at: string
+  updated_at: string
+}
+
+type ProjectInput = {
+  name: string
+  lat: number
+  lng: number
+  height: number
+  use_dsm: boolean
+}
+
+export async function fetchProjects(token: string): Promise<ProjectRecord[]> {
+  const res = await fetch('/api/projects', { headers: { Authorization: `Bearer ${token}` } })
+  const body: ApiResponse<ProjectRecord[]> = await res.json()
+  if (body.error || !body.data) throw new Error(body.error || 'failed to list projects')
+  return body.data
+}
+
+export async function createProject(token: string, input: ProjectInput): Promise<ProjectRecord> {
+  const res = await fetch('/api/projects', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(input),
+  })
+  const body: ApiResponse<ProjectRecord> = await res.json()
+  if (body.error || !body.data) throw new Error(body.error || 'failed to create project')
+  return body.data
+}
+
+export async function getProject(token: string, id: number): Promise<ProjectRecord> {
+  const res = await fetch(`/api/projects/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+  const body: ApiResponse<ProjectRecord> = await res.json()
+  if (body.error || !body.data) throw new Error(body.error || 'failed to get project')
+  return body.data
+}
+
+export async function updateProject(token: string, id: number, input: ProjectInput): Promise<ProjectRecord> {
+  const res = await fetch(`/api/projects/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(input),
+  })
+  const body: ApiResponse<ProjectRecord> = await res.json()
+  if (body.error || !body.data) throw new Error(body.error || 'failed to update project')
+  return body.data
+}
+
+export async function deleteProject(token: string, id: number): Promise<void> {
+  const res = await fetch(`/api/projects/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  const body: ApiResponse<null> = await res.json()
+  if (body.error) throw new Error(body.error || 'failed to delete project')
+}
+
 export async function fetchGrid(lat1: number, lng1: number, lat2: number, lng2: number, h: number, res?: number): Promise<GridCell[]> {
   const params = new URLSearchParams({
     lat1: String(lat1), lng1: String(lng1),

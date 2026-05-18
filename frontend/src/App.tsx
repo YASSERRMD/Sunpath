@@ -6,6 +6,7 @@ import PinInspector from './components/PinInspector'
 import KeyDates from './components/KeyDates'
 import ConfidenceBanner from './components/ConfidenceBanner'
 import AboutPanel from './components/AboutPanel'
+import ProjectsPanel from './components/ProjectsPanel'
 import TimeSlider from './components/TimeSlider'
 import SunIndicator from './components/SunIndicator'
 import { fetchHorizon, fetchBuildings, fetchGrid } from './lib/api'
@@ -194,6 +195,23 @@ function App() {
         </p>
 
         <SidePanel pin={pin} height={height} onHeightChange={setHeight} onPinChange={handlePinChange} />
+
+        {pin && (
+          <ProjectsPanel
+            lat={pin.lat}
+            lng={pin.lng}
+            height={height}
+            useDSM={useDSM}
+            onLoadProject={(lat, lng, h, dsm) => {
+              setPin({ lat, lng })
+              setHeight(h)
+              setUseDSM(dsm)
+              setProfile(null)
+              setYear(null)
+              setLoadState('idle')
+            }}
+          />
+        )}
 
         {offline && (
           <div style={{ padding: '10px 14px', background: '#fff3e0', border: '1px solid #ffcc80', borderRadius: 6, marginBottom: 16, fontSize: 13, color: '#e65100' }}>
