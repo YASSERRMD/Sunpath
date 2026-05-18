@@ -1,0 +1,84 @@
+package api
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/yasserrmd/sunpath/backend/internal/geo"
+	"github.com/yasserrmd/sunpath/backend/internal/horizon"
+	"github.com/yasserrmd/sunpath/backend/internal/osm"
+	"github.com/yasserrmd/sunpath/backend/internal/store"
+)
+
+type Server struct {
+	store         *store.Store
+	overpassURL   string
+	cachedClient  *osm.CachedClient
+	horizonComp   *horizon.CachedComputer
+}
+
+func NewServer(st *store.Store, overpassURL string) *Server {
+	oc := osm.NewClient(overpassURL)
+	cc := osm.NewCachedClient(oc, st, osm.DefaultConfig())
+	hc := horizon.NewCachedComputer(st)
+	return &Server{
+		store:        st,
+		overpassURL:  overpassURL,
+		cachedClient: cc,
+		horizonComp:  hc,
+	}
+}
+
+func (s *Server) Routes() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/healthz", s.handleHealthz)
+	mux.HandleFunc("/api/horizon", cors(s.handleHorizon))
+	mux.HandleFunc("/api/geocode", cors(s.handleGeocode))
+	return withLogging(mux)
+}
+
+type envelope struct {
+	Data  interface{} `json:"data,omitempty"`
+	Error string      `json:"error,omitempty"`
+}
+
+func writeJSON(w http.ResponseWriter, status int, v interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(v)
+}
+
+func writeError(w http.ResponseWriter, status int, msg string) {
+	writeJSON(w, status, envelope{Error: msg})
+}
+
+func cors(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if origin == "http://localhost:5173" || origin == "http://localhost:4173" || strings.HasSuffix(origin, ".sunpath.app") {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		} else {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		}
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(204)
+			return
+		}
+		next(w, r)
+	}
+}
+
+func withLogging(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		log.Printf("%s %s %s", r.Method, r.URL.Path, time.Since(start))
+	})
+}
