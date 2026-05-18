@@ -1,43 +1,11 @@
 package auth
 
 import (
-	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
-	"time"
 )
-
-var ErrSessionNotFound = errors.New("session not found")
-var ErrSessionExpired = errors.New("session expired")
-
-type User struct {
-	ID        int64     `json:"id"`
-	Email     string    `json:"email"`
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-type Session struct {
-	ID        int64     `json:"id"`
-	UserID    int64     `json:"user_id"`
-	TokenHash string    `json:"-"`
-	ExpiresAt time.Time `json:"expires_at"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-type SessionStore interface {
-	CreateUser(ctx context.Context, email, name string) (*User, error)
-	GetUserByEmail(ctx context.Context, email string) (*User, error)
-	GetUserByID(ctx context.Context, id int64) (*User, error)
-	CreateSession(ctx context.Context, userID int64, tokenHash string, expiresAt time.Time) (*Session, error)
-	GetSessionByTokenHash(ctx context.Context, tokenHash string) (*Session, error)
-	DeleteExpiredSessions(ctx context.Context) error
-	CreateMagicLink(ctx context.Context, email, code string, expiresAt time.Time) error
-	ConsumeMagicLink(ctx context.Context, code string) (*string, error)
-}
 
 func GenerateToken() (string, string, error) {
 	raw := make([]byte, 32)
@@ -52,28 +20,6 @@ func GenerateToken() (string, string, error) {
 func HashToken(token string) string {
 	h := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(h[:])
-}
-
-func ValidateSession(ctx context.Context, store SessionStore, token string) (*User, error) {
-	tokenHash := HashToken(token)
-	session, err := store.GetSessionByTokenHash(ctx, tokenHash)
-	if err != nil {
-		return nil, err
-	}
-	if session == nil {
-		return nil, ErrSessionNotFound
-	}
-	if time.Now().After(session.ExpiresAt) {
-		return nil, ErrSessionExpired
-	}
-	user, err := store.GetUserByID(ctx, session.UserID)
-	if err != nil {
-		return nil, err
-	}
-	if user == nil {
-		return nil, ErrSessionNotFound
-	}
-	return user, nil
 }
 
 func GenerateMagicCode() (string, error) {
