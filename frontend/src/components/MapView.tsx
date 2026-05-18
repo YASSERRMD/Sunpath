@@ -2,15 +2,19 @@ import { useEffect, useRef } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { PinState } from '../App'
+import ShadowOverlay from './ShadowOverlay'
+import type { BuildingOutline } from '../lib/api'
 
 interface MapViewProps {
   pin: PinState | null
   onPinChange: (p: PinState) => void
+  sweepDate?: Date
+  buildings?: BuildingOutline[]
 }
 
 const TILE_STYLE_URL = import.meta.env.VITE_TILE_STYLE_URL || 'https://demotiles.maplibre.org/style.json'
 
-export default function MapView({ pin, onPinChange }: MapViewProps) {
+export default function MapView({ pin, onPinChange, sweepDate, buildings }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const markerRef = useRef<maplibregl.Marker | null>(null)
@@ -76,5 +80,18 @@ export default function MapView({ pin, onPinChange }: MapViewProps) {
     map.flyTo({ center: [pin.lng, pin.lat], zoom: 15 })
   }, [pin, onPinChange])
 
-  return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+  return (
+    <>
+      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+      {pin && sweepDate && buildings && (
+        <ShadowOverlay
+          map={mapRef.current}
+          date={sweepDate}
+          lat={pin.lat}
+          lng={pin.lng}
+          buildings={buildings}
+        />
+      )}
+    </>
+  )
 }

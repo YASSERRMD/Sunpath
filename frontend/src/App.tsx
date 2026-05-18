@@ -8,7 +8,8 @@ import ConfidenceBanner from './components/ConfidenceBanner'
 import AboutPanel from './components/AboutPanel'
 import TimeSlider from './components/TimeSlider'
 import SunIndicator from './components/SunIndicator'
-import { fetchHorizon } from './lib/api'
+import { fetchHorizon, fetchBuildings } from './lib/api'
+import type { BuildingOutline } from './lib/api'
 import { computeYear } from './lib/horizon'
 import { generateSummary } from './lib/summary'
 import { decodeState, updateURL } from './lib/urlstate'
@@ -27,6 +28,7 @@ function App() {
   const [height, setHeight] = useState(1.5)
   const [profile, setProfile] = useState<HorizonProfile | null>(null)
   const [year, setYear] = useState<YearResult | null>(null)
+  const [buildings, setBuildings] = useState<BuildingOutline[]>([])
   const [loadState, setLoadState] = useState<LoadState>('idle')
   const [loadError, setLoadError] = useState('')
   const [selectedDay, setSelectedDay] = useState(170)
@@ -70,9 +72,13 @@ function App() {
     setLoadState('loading')
     setLoadError('')
 
-    fetchHorizon(pin.lat, pin.lng, height)
-      .then((p) => {
+    Promise.all([
+      fetchHorizon(pin.lat, pin.lng, height),
+      fetchBuildings(pin.lat, pin.lng),
+    ])
+      .then(([p, b]) => {
         setProfile(p)
+        setBuildings(b)
         const y = computeYear(pin.lat, pin.lng, p)
         setYear(y)
         setLoadState('loaded')
@@ -103,7 +109,7 @@ function App() {
   return (
     <div style={{ display: 'flex', width: '100vw', height: '100vh', overflow: 'hidden', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <div style={{ flex: 1, position: 'relative' }}>
-        <MapView pin={pin} onPinChange={handlePinChange} />
+        <MapView pin={pin} onPinChange={handlePinChange} sweepDate={sweepDate} buildings={buildings} />
       </div>
       <div style={{
         width: 400,
