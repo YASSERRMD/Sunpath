@@ -23,7 +23,7 @@ func SampleDay(t time.Time, lat, lng float64, intervalSec int) []Sample {
 
 	var samples []Sample
 	for cursor := start; cursor.Before(end); cursor = cursor.Add(time.Duration(intervalSec) * time.Second) {
-		az, el := solarPosition(cursor, lat, lng)
+		az, el := SolarPosition(cursor, lat, lng)
 		el = math.Max(el, -90)
 		samples = append(samples, Sample{
 			Time:      cursor,

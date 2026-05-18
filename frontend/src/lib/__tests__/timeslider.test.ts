@@ -20,7 +20,6 @@ describe('TimeSlider logic', () => {
   it('end of day is 23:59', () => {
     const frac = 0.99999
     const hours = Math.floor(frac * 24)
-    const mins = Math.floor((frac * 24 - hours) * 60)
     expect(hours >= 23).toBe(true)
   })
 

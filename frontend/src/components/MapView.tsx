@@ -3,18 +3,24 @@ import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { PinState } from '../App'
 import ShadowOverlay from './ShadowOverlay'
-import type { BuildingOutline } from '../lib/api'
+import RectangleDraw from './RectangleDraw'
+import GridHeatmap from './GridHeatmap'
+import type { BuildingOutline, GridCell } from '../lib/api'
 
 interface MapViewProps {
   pin: PinState | null
   onPinChange: (p: PinState) => void
   sweepDate?: Date
   buildings?: BuildingOutline[]
+  gridCells?: GridCell[]
+  gridLoading?: boolean
+  onRectangle?: (bounds: { lat1: number; lng1: number; lat2: number; lng2: number }) => void
+  onGridCellClick?: (cell: GridCell) => void
 }
 
 const TILE_STYLE_URL = import.meta.env.VITE_TILE_STYLE_URL || 'https://demotiles.maplibre.org/style.json'
 
-export default function MapView({ pin, onPinChange, sweepDate, buildings }: MapViewProps) {
+export default function MapView({ pin, onPinChange, sweepDate, buildings, gridCells, gridLoading, onRectangle, onGridCellClick }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const markerRef = useRef<maplibregl.Marker | null>(null)
@@ -81,7 +87,7 @@ export default function MapView({ pin, onPinChange, sweepDate, buildings }: MapV
   }, [pin, onPinChange])
 
   return (
-    <>
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
       {pin && sweepDate && buildings && (
         <ShadowOverlay
@@ -92,6 +98,17 @@ export default function MapView({ pin, onPinChange, sweepDate, buildings }: MapV
           buildings={buildings}
         />
       )}
-    </>
+      {onRectangle && (
+        <RectangleDraw map={mapRef.current} onRectangle={onRectangle} />
+      )}
+      {gridCells && (
+        <GridHeatmap map={mapRef.current} cells={gridCells} onCellClick={onGridCellClick} />
+      )}
+      {gridLoading && (
+        <div style={{ position: 'absolute', top: 16, right: 16, background: '#fff', padding: '6px 12px', borderRadius: 4, fontSize: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }}>
+          Loading grid...
+        </div>
+      )}
+    </div>
   )
 }
