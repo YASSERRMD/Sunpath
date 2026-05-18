@@ -1,56 +1,55 @@
 # Sunpath Architecture
 
-## Shadow Model: 2.5D Core (DSM optional later)
+## Shadow Model: 2.5D Core (DSM optional)
 
-Core (Phases 1-9): Buildings are treated as 2.5D extruded prisms. Each OSM building footprint polygon is extruded vertically to its height. Shadow casting is geometric ray intersection between the sun vector and these prisms.
+Buildings are treated as 2.5D extruded prisms from OSM footprints. Shadow casting is geometric ray intersection between the sun vector and these prisms.
 
-A later, clearly isolated phase adds Digital Surface Model / terrain-and-vegetation shadows as an optional overlay. It must not be entangled with the core engine.
+DSM terrain/vegetation shadows are available as an optional overlay (opt-in). They do not change the core engine.
 
 ## Compute Split: Backend Precompute, Client Interpolation
 
-**Backend (Go)**: Fetches and caches OSM building geometry, extrudes prisms, and for a requested point precomputes a horizon profile — the obstruction angle of surrounding buildings for each compass azimuth (360 samples, one per degree). This is the expensive step and it is cached per point.
+**Backend (Go)**: Fetches and caches OSM building geometry, extrudes prisms, and computes a horizon profile — the obstruction angle of surrounding buildings for each compass azimuth (360 samples). This is the expensive step, cached per point in Postgres (with Redis hot cache).
 
-**Client (browser)**: Given the cached horizon profile, the client computes sun position for any date/time (cheap astronomy math) and checks it against the horizon profile. Producing the full year heatmap is then thousands of cheap lookups, done instantly in the browser.
+**Client (browser)**: Given the cached horizon profile, the client computes sun position for any date/time (cheap astronomy math) and checks it against the horizon profile. Full year heatmap is thousands of cheap lookups, done instantly.
 
 ## The Horizon Profile (Core Abstraction)
 
-For a point P at observer height h:
-
 ```
-horizon[az] = maximum elevation angle at which a building edge obstructs the sky, looking in direction az
+horizon[az] = max elevation angle at which a building edge obstructs the sky in direction az
 ```
 
-A point is in direct sun if and only if:
-
+A point is in direct sun iff:
 ```
 sun_elevation > horizon[round(sun_azimuth)] AND sun_elevation > 0
 ```
-
-Azimuth convention: 0=N, 90=E, 180=S, 270=W (documented and tested explicitly).
+Azimuth convention: 0=N, 90=E, 180=S, 270=W (tested explicitly).
 
 ## Technology Stack
 
 | Layer | Choice | Reason |
 |-------|--------|--------|
-| Backend | Go (1.22+) | Scalable backend |
+| Backend | Go (1.22+) | Scalable, fast |
 | Geometry core | Go, custom ray casting | No heavyweight GIS dependency |
-| Backend cache | SQLite (modernc.org/sqlite, no CGO) | Single-file, zero operations |
-| OSM data | Overpass API | Open data, no API key |
-| Frontend | React + Vite + TypeScript | Reactive, low-latency frontend |
-| Map rendering | MapLibre GL JS | Open-source, no Mapbox token |
-| Tiles | MapTiler open tiles or self-hosted | No proprietary token |
-| Sun math | suncalc (client) + Go port (backend) | Well-tested astronomy |
+| Primary DB | Postgres 16 + PostGIS | Geospatial queries, system of record |
+| Hot cache / queue | Redis 7 | Cache horizon profiles, job queue |
+| OSM data | Overpass API | Open data, no key |
+| Frontend | React + Vite + TypeScript + PWA | Reactive, offline-capable |
+| Map | MapLibre GL JS | Open-source, no Mapbox token |
+| Tiles | MapTiler / self-hosted | No proprietary token |
+| Sun math | suncalc (client) + Go port | Well-tested astronomy |
 | Charts | Hand-built canvas heatmap | Keeps bundle small |
-| Geocoding | Nominatim (OSM) | Open, no API key |
+| Geocoding | Nominatim (OSM) | Open, no key |
+| Auth | Magic-link / single OAuth | No password storage |
+| Migrations | goose | Up/down reversible |
+| Containers | Docker Compose | Single command to run all services |
 
 ## Building Height Resolution from OSM
 
-Priority order:
 1. `height` tag (metres) — use directly.
-2. `building:levels` tag — multiply by 3.2 m per level, plus 1 m base.
-3. No data — apply configurable default (8 m for building) and flag as estimated.
+2. `building:levels` tag — 3.2 m per level + 1 m base.
+3. No data — configurable default (8 m), flagged as estimated.
 
-The fraction of estimated-height buildings is surfaced as a confidence indicator.
+Estimated fraction surfaced as confidence indicator.
 
 ## Repository Shape
 
@@ -61,21 +60,27 @@ sunpath/
   LICENSE
   .gitignore
   docker-compose.yml
+  docker-compose.prod.yml
   backend/
-    cmd/sunpathd/main.go
+    cmd/
+      sunpathd/main.go     # server entrypoint
+      paritycheck/          # cross-store parity check
     internal/
       geo/       # geo types, polygon ops, extrusion
-      osm/       # Overpass client, building parsing, cache
-      horizon/   # horizon profile engine
-      sun/       # solar position (backend validation copy)
+      osm/       # Overpass client, building parsing
+      horizon/   # horizon profile engine (unchanged)
+      sun/       # solar position (validation copy)
+      dsm/       # DSM terrain elevation overlay
       api/       # HTTP handlers, routing
-      store/     # SQLite cache layer
+      store/     # Storage interface + Postgres adapter
+    migrations/  # goose SQL migrations
     go.mod
   frontend/
     src/
-      lib/sun.ts         # client sun position + sun/shade rule
-      lib/horizon.ts     # horizon profile consumption, year compute
-      components/        # Map, PinInspector, YearHeatmap, etc.
+      lib/sun.ts         # client sun position + rule
+      lib/horizon.ts     # horizon consumption, year compute
+      components/        # Map, PinInspector, Heatmap, etc.
+      workers/           # Web Worker for year computation
       App.tsx
     package.json
     vite.config.ts
@@ -86,8 +91,8 @@ sunpath/
 
 ## Edge Cases
 
-- Open field (no buildings): horizon is all zeros.
-- Courtyard surrounded by tall buildings: heavy obstruction.
+- Open field: all-zero horizon.
+- Courtyard: heavy obstruction.
 - High latitude: polar day / polar night.
 - Antimeridian / timezone crossing: documented limitation.
-- Observer above all buildings: horizon collapses to near zero.
+- Observer above all buildings: near-zero horizon.
