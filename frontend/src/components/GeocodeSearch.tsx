@@ -55,6 +55,7 @@ export default function GeocodeSearch({ onSelect }: GeocodeSearchProps) {
         onFocus={() => results.length > 0 && setShowResults(true)}
         onBlur={() => setTimeout(() => setShowResults(false), 200)}
         placeholder="e.g. Paris, London, Tokyo..."
+        aria-label="Search for a location"
         style={{
           width: '100%',
           padding: '8px 12px',

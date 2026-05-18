@@ -94,6 +94,13 @@ export default function YearHeatmap({ grid, selectedDay, onDaySelect }: YearHeat
       ref={canvasRef}
       style={{ width: '100%', maxWidth: dims.w, height: 'auto', cursor: 'pointer' }}
       onClick={handleClick}
+      role="img"
+      aria-label={`Solar heatmap showing sun and shade across the year. Day ${selectedDay + 1} of 365 is highlighted.`}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowRight') onDaySelect(Math.min(selectedDay + 1, 364))
+        if (e.key === 'ArrowLeft') onDaySelect(Math.max(selectedDay - 1, 0))
+      }}
     />
   )
 }

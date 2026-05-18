@@ -53,18 +53,21 @@ export default function SidePanel({ pin, height, onHeightChange, onPinChange }: 
               <button
                 onClick={() => onHeightChange(1.5)}
                 style={btnStyle(height === 1.5)}
+                aria-pressed={height === 1.5}
               >
                 Ground
               </button>
               <button
                 onClick={() => onHeightChange(10)}
                 style={btnStyle(height === 10)}
+                aria-pressed={height === 10}
               >
                 Floor 3
               </button>
               <button
                 onClick={() => onHeightChange(30)}
                 style={btnStyle(height === 30)}
+                aria-pressed={height === 30}
               >
                 Floor 10
               </button>
