@@ -11,11 +11,41 @@ import SunIndicator from './components/SunIndicator'
 import { fetchHorizon, fetchBuildings, fetchGrid } from './lib/api'
 import type { GridCell } from './lib/api'
 import type { BuildingOutline } from './lib/api'
-import { computeYear } from './lib/horizon'
+import type { HorizonProfile } from './lib/api'
 import { generateSummary } from './lib/summary'
 import { decodeState, updateURL } from './lib/urlstate'
-import type { HorizonProfile } from './lib/api'
-import type { YearResult, DayResult } from './lib/horizon'
+import { useWorker } from './lib/useWorker'
+
+interface WorkerDayResult {
+  date: string
+  dayOfYear: number
+  totalMinutes: number
+}
+
+interface WorkerYearResult {
+  days: WorkerDayResult[]
+  grid: number[][]
+  maxSunMinutes: number
+  minSunMinutes: number
+  bestDay: number
+  worstDay: number
+}
+
+interface DayResult {
+  date: Date
+  dayOfYear: number
+  totalMinutes: number
+  sunStates: { time: Date; inSun: boolean }[]
+}
+
+interface YearResult {
+  days: DayResult[]
+  grid: number[][]
+  maxSunMinutes: number
+  minSunMinutes: number
+  bestDay: number
+  worstDay: number
+}
 
 export interface PinState {
   lat: number
@@ -78,6 +108,22 @@ function App() {
     setLoadState('idle')
   }, [])
 
+  const workerPost = useWorker(
+    () => new Worker(new URL('./lib/year.worker.ts', import.meta.url), { type: 'module' }),
+    (workerData: WorkerYearResult) => {
+      const days: DayResult[] = workerData.days.map((d) => ({
+        date: new Date(d.date),
+        dayOfYear: d.dayOfYear,
+        totalMinutes: d.totalMinutes,
+        sunStates: [],
+      }))
+      const yearResult: YearResult = { ...workerData, days }
+      setYear(yearResult)
+      setLoadState('loaded')
+    },
+    (_done: number, _total: number) => {}
+  )
+
   useEffect(() => {
     if (!pin || offline) return
     setLoadState('loading')
@@ -90,9 +136,7 @@ function App() {
       .then(([p, b]) => {
         setProfile(p)
         setBuildings(b)
-        const y = computeYear(pin.lat, pin.lng, p)
-        setYear(y)
-        setLoadState('loaded')
+        workerPost({ type: 'compute', lat: pin.lat, lng: pin.lng, profile: p })
       })
       .catch((err) => {
         const msg = err.message || ''

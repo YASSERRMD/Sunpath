@@ -16,7 +16,7 @@ type BuildingOutline struct {
 
 func (s *Server) handleBuildings(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
-		writeError(w, 405, "method not allowed")
+		s.writeError(w, 405, "method not allowed")
 		return
 	}
 
@@ -24,19 +24,19 @@ func (s *Server) handleBuildings(w http.ResponseWriter, r *http.Request) {
 	lngStr := r.URL.Query().Get("lng")
 
 	if latStr == "" || lngStr == "" {
-		writeError(w, 400, "lat and lng are required")
+		s.writeError(w, 400, "lat and lng are required")
 		return
 	}
 
 	lat, err := strconv.ParseFloat(latStr, 64)
 	if err != nil || lat < -90 || lat > 90 {
-		writeError(w, 400, "invalid lat")
+		s.writeError(w, 400, "invalid lat")
 		return
 	}
 
 	lng, err := strconv.ParseFloat(lngStr, 64)
 	if err != nil || lng < -180 || lng > 180 {
-		writeError(w, 400, "invalid lng")
+		s.writeError(w, 400, "invalid lng")
 		return
 	}
 
@@ -44,7 +44,7 @@ func (s *Server) handleBuildings(w http.ResponseWriter, r *http.Request) {
 	buildings, err := fetchBuildingsAround(point, s.cachedClient)
 	if err != nil {
 		log.Printf("fetching buildings: %v", err)
-		writeError(w, 502, "failed to fetch building data")
+		s.writeError(w, 502, "failed to fetch building data")
 		return
 	}
 

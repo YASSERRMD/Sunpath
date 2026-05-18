@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/yasserrmd/sunpath/backend/internal/horizon"
@@ -12,11 +13,15 @@ import (
 	"github.com/yasserrmd/sunpath/backend/internal/store"
 )
 
+const evictionTTL = 7 * 24 * time.Hour
+
 type Server struct {
 	store        *store.Store
 	overpassURL   string
 	cachedClient  *osm.CachedClient
 	horizonComp   *horizon.CachedComputer
+	geoClient     *osm.RateLimitedClient
+	errorCounts   map[string]*int64
 }
 
 func NewServer(st *store.Store, overpassURL string) *Server {
@@ -28,6 +33,8 @@ func NewServer(st *store.Store, overpassURL string) *Server {
 		overpassURL:  overpassURL,
 		cachedClient: cc,
 		horizonComp:  hc,
+		geoClient:    osm.NewRateLimitedClient(2),
+		errorCounts:  map[string]*int64{},
 	}
 }
 
@@ -37,6 +44,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("/api/horizon", cors(s.handleHorizon))
 	mux.HandleFunc("/api/buildings", cors(s.handleBuildings))
 	mux.HandleFunc("/api/grid", cors(s.handleGrid))
+	mux.HandleFunc("/api/metrics", cors(s.handleMetrics))
+	mux.HandleFunc("/api/cache/evict", cors(s.handleCacheEvict))
 	mux.HandleFunc("/api/geocode", cors(s.handleGeocode))
 	return withLogging(mux)
 }
@@ -50,6 +59,21 @@ func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(v)
+}
+
+func (s *Server) writeError(w http.ResponseWriter, status int, msg string) {
+	key := http.StatusText(status)
+	if key == "" {
+		key = "unknown"
+	}
+	counter, ok := s.errorCounts[key]
+	if !ok {
+		var zero int64
+		s.errorCounts[key] = &zero
+		counter = &zero
+	}
+	atomic.AddInt64(counter, 1)
+	writeJSON(w, status, envelope{Error: msg})
 }
 
 func writeError(w http.ResponseWriter, status int, msg string) {

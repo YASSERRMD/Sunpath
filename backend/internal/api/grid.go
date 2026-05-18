@@ -20,7 +20,7 @@ type GridCell struct {
 
 func (s *Server) handleGrid(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
-		writeError(w, 405, "method not allowed")
+		s.writeError(w, 405, "method not allowed")
 		return
 	}
 
@@ -39,7 +39,7 @@ func (s *Server) handleGrid(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if math.IsNaN(lat1) || math.IsNaN(lng1) || math.IsNaN(lat2) || math.IsNaN(lng2) {
-		writeError(w, 400, "lat1, lng1, lat2, lng2 are required")
+		s.writeError(w, 400, "lat1, lng1, lat2, lng2 are required")
 		return
 	}
 
@@ -64,7 +64,7 @@ func (s *Server) handleGrid(w http.ResponseWriter, r *http.Request) {
 	buildings, err := fetchBuildingsAround(geo.Point{Lat: (minLat + maxLat) / 2, Lng: (minLng + maxLng) / 2}, s.cachedClient)
 	if err != nil {
 		log.Printf("fetching buildings for grid: %v", err)
-		writeError(w, 502, "failed to fetch building data")
+		s.writeError(w, 502, "failed to fetch building data")
 		return
 	}
 

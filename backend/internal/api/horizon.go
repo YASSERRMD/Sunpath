@@ -14,7 +14,7 @@ const maxRadius = 1000.0
 
 func (s *Server) handleHorizon(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
-		writeError(w, 405, "method not allowed")
+		s.writeError(w, 405, "method not allowed")
 		return
 	}
 
@@ -23,19 +23,19 @@ func (s *Server) handleHorizon(w http.ResponseWriter, r *http.Request) {
 	hStr := r.URL.Query().Get("h")
 
 	if latStr == "" || lngStr == "" {
-		writeError(w, 400, "lat and lng are required")
+		s.writeError(w, 400, "lat and lng are required")
 		return
 	}
 
 	lat, err := strconv.ParseFloat(latStr, 64)
 	if err != nil || lat < -90 || lat > 90 {
-		writeError(w, 400, "invalid lat")
+		s.writeError(w, 400, "invalid lat")
 		return
 	}
 
 	lng, err := strconv.ParseFloat(lngStr, 64)
 	if err != nil || lng < -180 || lng > 180 {
-		writeError(w, 400, "invalid lng")
+		s.writeError(w, 400, "invalid lng")
 		return
 	}
 
@@ -43,7 +43,7 @@ func (s *Server) handleHorizon(w http.ResponseWriter, r *http.Request) {
 	if hStr != "" {
 		observerH, err = strconv.ParseFloat(hStr, 64)
 		if err != nil || observerH < 0 {
-			writeError(w, 400, "invalid h (observer height in metres)")
+			s.writeError(w, 400, "invalid h (observer height in metres)")
 			return
 		}
 	}
@@ -53,14 +53,14 @@ func (s *Server) handleHorizon(w http.ResponseWriter, r *http.Request) {
 	buildings, err := fetchBuildingsAround(point, s.cachedClient)
 	if err != nil {
 		log.Printf("fetching buildings: %v", err)
-		writeError(w, 502, "failed to fetch building data")
+		s.writeError(w, 502, "failed to fetch building data")
 		return
 	}
 
 	profile, err := s.horizonComp.Compute(point, observerH, buildings)
 	if err != nil {
 		log.Printf("computing horizon: %v", err)
-		writeError(w, 500, "failed to compute horizon")
+		s.writeError(w, 500, "failed to compute horizon")
 		return
 	}
 
