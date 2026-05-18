@@ -22,6 +22,21 @@ type HorizonRecord struct {
 	CreatedAt  time.Time `json:"created_at"`
 }
 
+type UserRecord struct {
+	ID        int64     `json:"id"`
+	Email     string    `json:"email"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type SessionRecord struct {
+	ID        int64     `json:"id"`
+	UserID    int64     `json:"user_id"`
+	TokenHash string    `json:"token_hash"`
+	ExpiresAt time.Time `json:"expires_at"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type CacheStats struct {
 	OSMExtracts      int   `json:"osm_extracts"`
 	HorizonProfiles  int   `json:"horizon_profiles"`

@@ -115,6 +115,104 @@ func (s *PostgresStore) EvictOlderThan(age time.Duration) (int, error) {
 	return n1 + n2, nil
 }
 
+func (s *PostgresStore) CreateUser(ctx context.Context, email, name string) (*UserRecord, error) {
+	var u UserRecord
+	err := s.pool.QueryRow(ctx,
+		`INSERT INTO users (email, name) VALUES ($1, $2)
+		 ON CONFLICT (email) DO UPDATE SET name = $2
+		 RETURNING id, email, name, created_at`,
+		email, name).Scan(&u.ID, &u.Email, &u.Name, &u.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+func (s *PostgresStore) GetUserByEmail(ctx context.Context, email string) (*UserRecord, error) {
+	var u UserRecord
+	err := s.pool.QueryRow(ctx,
+		"SELECT id, email, name, created_at FROM users WHERE email = $1", email).
+		Scan(&u.ID, &u.Email, &u.Name, &u.CreatedAt)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+func (s *PostgresStore) GetUserByID(ctx context.Context, id int64) (*UserRecord, error) {
+	var u UserRecord
+	err := s.pool.QueryRow(ctx,
+		"SELECT id, email, name, created_at FROM users WHERE id = $1", id).
+		Scan(&u.ID, &u.Email, &u.Name, &u.CreatedAt)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+func (s *PostgresStore) CreateSession(ctx context.Context, userID int64, tokenHash string, expiresAt time.Time) (*SessionRecord, error) {
+	var sess SessionRecord
+	err := s.pool.QueryRow(ctx,
+		`INSERT INTO auth_sessions (user_id, token_hash, expires_at)
+		 VALUES ($1, $2, $3)
+		 RETURNING id, user_id, token_hash, expires_at, created_at`,
+		userID, tokenHash, expiresAt).
+		Scan(&sess.ID, &sess.UserID, &sess.TokenHash, &sess.ExpiresAt, &sess.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &sess, nil
+}
+
+func (s *PostgresStore) GetSessionByTokenHash(ctx context.Context, tokenHash string) (*SessionRecord, error) {
+	var sess SessionRecord
+	err := s.pool.QueryRow(ctx,
+		"SELECT id, user_id, token_hash, expires_at, created_at FROM auth_sessions WHERE token_hash = $1", tokenHash).
+		Scan(&sess.ID, &sess.UserID, &sess.TokenHash, &sess.ExpiresAt, &sess.CreatedAt)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &sess, nil
+}
+
+func (s *PostgresStore) DeleteExpiredSessions(ctx context.Context) error {
+	_, err := s.pool.Exec(ctx, "DELETE FROM auth_sessions WHERE expires_at < NOW()")
+	return err
+}
+
+func (s *PostgresStore) CreateMagicLink(ctx context.Context, email, code string, expiresAt time.Time) error {
+	_, err := s.pool.Exec(ctx,
+		`INSERT INTO magic_links (email, code, expires_at) VALUES ($1, $2, $3)
+		 ON CONFLICT (code) DO NOTHING`,
+		email, code, expiresAt)
+	return err
+}
+
+func (s *PostgresStore) ConsumeMagicLink(ctx context.Context, code string) (*string, error) {
+	var email string
+	err := s.pool.QueryRow(ctx,
+		`UPDATE magic_links SET used = TRUE
+		 WHERE code = $1 AND used = FALSE AND expires_at > NOW()
+		 RETURNING email`,
+		code).Scan(&email)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &email, nil
+}
+
 func (s *PostgresStore) Stats() CacheStats {
 	var st CacheStats
 
