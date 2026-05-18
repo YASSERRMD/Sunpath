@@ -129,6 +129,32 @@ export async function deleteProject(token: string, id: number): Promise<void> {
   if (body.error) throw new Error(body.error || 'failed to delete project')
 }
 
+export type BatchPoint = {
+  lat: number
+  lng: number
+  height: number
+  use_dsm: boolean
+}
+
+export type BatchResult = {
+  lat: number
+  lng: number
+  height: number
+  error?: string
+  data?: HorizonProfile
+}
+
+export async function fetchBatchHorizon(points: BatchPoint[]): Promise<BatchResult[]> {
+  const res = await fetch('/api/horizon/batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ points }),
+  })
+  const body: ApiResponse<BatchResult[]> = await res.json()
+  if (body.error || !body.data) throw new Error(body.error || 'batch request failed')
+  return body.data
+}
+
 export async function fetchGrid(lat1: number, lng1: number, lat2: number, lng2: number, h: number, res?: number): Promise<GridCell[]> {
   const params = new URLSearchParams({
     lat1: String(lat1), lng1: String(lng1),
