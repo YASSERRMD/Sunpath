@@ -12,6 +12,7 @@ import (
 	"github.com/yasserrmd/sunpath/backend/internal/dsm"
 	"github.com/yasserrmd/sunpath/backend/internal/horizon"
 	"github.com/yasserrmd/sunpath/backend/internal/osm"
+	"github.com/yasserrmd/sunpath/backend/internal/queue"
 	"github.com/yasserrmd/sunpath/backend/internal/store"
 )
 
@@ -25,14 +26,15 @@ type Server struct {
 	geoClient     *osm.RateLimitedClient
 	elevClient    *dsm.ElevationClient
 	errorCounts   map[string]*int64
+	jobQueue      *queue.JobQueue
 }
 
-func NewServer(st store.Storage, overpassURL string) *Server {
+func NewServer(st store.Storage, overpassURL string, opts ...*queue.JobQueue) *Server {
 	oc := osm.NewClient(overpassURL)
 	cc := osm.NewCachedClient(oc, st, osm.DefaultConfig())
 	hc := horizon.NewCachedComputer(st)
 	elevURL := os.Getenv("ELEVATION_API_URL")
-	return &Server{
+	srv := &Server{
 		store:        st,
 		overpassURL:  overpassURL,
 		cachedClient: cc,
@@ -41,6 +43,10 @@ func NewServer(st store.Storage, overpassURL string) *Server {
 		elevClient:   dsm.NewElevationClient(elevURL),
 		errorCounts:  map[string]*int64{},
 	}
+	if len(opts) > 0 {
+		srv.jobQueue = opts[0]
+	}
+	return srv
 }
 
 func (s *Server) Routes() http.Handler {
@@ -54,6 +60,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("/api/geocode", cors(s.handleGeocode))
 	mux.HandleFunc("/api/auth/login", cors(s.handleAuthLogin))
 	mux.HandleFunc("/api/auth/callback", cors(s.handleAuthCallback))
+	mux.HandleFunc("/api/horizon/job", cors(s.handleHorizonJob))
+	mux.HandleFunc("/api/horizon/job/", cors(s.handleHorizonJob))
 	return withLogging(mux)
 }
 
