@@ -27,6 +27,18 @@ function App() {
   const [loadState, setLoadState] = useState<LoadState>('idle')
   const [loadError, setLoadError] = useState('')
   const [selectedDay, setSelectedDay] = useState(170)
+  const [offline, setOffline] = useState(!navigator.onLine)
+
+  useEffect(() => {
+    const handleOffline = () => setOffline(true)
+    const handleOnline = () => setOffline(false)
+    window.addEventListener('offline', handleOffline)
+    window.addEventListener('online', handleOnline)
+    return () => {
+      window.removeEventListener('offline', handleOffline)
+      window.removeEventListener('online', handleOnline)
+    }
+  }, [])
 
   useEffect(() => {
     const state = decodeState()
@@ -50,7 +62,7 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (!pin) return
+    if (!pin || offline) return
     setLoadState('loading')
     setLoadError('')
 
@@ -62,10 +74,15 @@ function App() {
         setLoadState('loaded')
       })
       .catch((err) => {
-        setLoadError(err.message || 'failed to compute')
+        const msg = err.message || ''
+        if (msg.includes('502') || msg.includes('fetch')) {
+          setLoadError('Building data is too thin in this area for a reliable analysis.')
+        } else {
+          setLoadError(msg || 'Failed to compute. Please try again.')
+        }
         setLoadState('error')
       })
-  }, [pin, height])
+  }, [pin, height, offline])
 
   const dayResult: DayResult | null = year && selectedDay >= 0 && selectedDay < year.days.length
     ? year.days[selectedDay]
@@ -94,12 +111,28 @@ function App() {
 
         <SidePanel pin={pin} height={height} onHeightChange={setHeight} onPinChange={handlePinChange} />
 
+        {offline && (
+          <div style={{ padding: '10px 14px', background: '#fff3e0', border: '1px solid #ffcc80', borderRadius: 6, marginBottom: 16, fontSize: 13, color: '#e65100' }}>
+            You are offline. Sunpath needs a network connection to fetch building data.
+          </div>
+        )}
+
         {loadState === 'loading' && (
-          <p style={{ color: '#999', fontSize: 14 }}>Computing horizon profile...</p>
+          <div style={{ padding: '20px 0', textAlign: 'center', color: '#999', fontSize: 14 }}>
+            Fetching building data and computing horizon...
+          </div>
         )}
 
         {loadState === 'error' && (
-          <p style={{ color: '#e74c3c', fontSize: 14 }}>{loadError}</p>
+          <div style={{ padding: '20px 0', textAlign: 'center' }}>
+            <p style={{ color: '#e74c3c', fontSize: 14 }}>{loadError}</p>
+            <button
+              onClick={() => setLoadState('idle')}
+              style={{ marginTop: 8, padding: '6px 16px', fontSize: 13, border: '1px solid #ccc', borderRadius: 4, background: '#fff', cursor: 'pointer' }}
+            >
+              Try again
+            </button>
+          </div>
         )}
 
         {loadState === 'loaded' && profile && year && (
