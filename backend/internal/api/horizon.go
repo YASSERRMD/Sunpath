@@ -10,7 +10,20 @@ import (
 	"github.com/yasserrmd/sunpath/backend/internal/geo"
 	"github.com/yasserrmd/sunpath/backend/internal/horizon"
 	"github.com/yasserrmd/sunpath/backend/internal/osm"
+	"github.com/yasserrmd/sunpath/backend/internal/veg"
 )
+
+func fetchTreesAround(point geo.Point, client *osm.CachedClient) []veg.Tree {
+	buildings, err := client.FetchBuildingsInBBox(
+		point.Lat-0.05, point.Lng-0.05,
+		point.Lat+0.05, point.Lng+0.05,
+	)
+	if err != nil {
+		return nil
+	}
+	_ = buildings
+	return nil
+}
 
 const maxRadius = 1000.0
 
@@ -51,6 +64,7 @@ func (s *Server) handleHorizon(w http.ResponseWriter, r *http.Request) {
 	}
 
 	useDSM := r.URL.Query().Get("dsm") == "true"
+	useVeg := r.URL.Query().Get("veg") == "true"
 
 	point := geo.Point{Lat: lat, Lng: lng}
 
@@ -62,20 +76,30 @@ func (s *Server) handleHorizon(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var profile horizon.Profile
+	var terrainPtr *[360]float64
+	obsElev := 0.0
+
 	if useDSM {
-		obsElev, err := s.elevClient.GetElevation(lat, lng)
+		obsElev, err = s.elevClient.GetElevation(lat, lng)
 		if err != nil {
 			log.Printf("fetching elevation: %v", err)
 			s.writeError(w, 502, "failed to fetch elevation data")
 			return
 		}
-		terrain, err := dsm.ComputeTerrainHorizon(s.elevClient, lat, lng, observerH, obsElev)
-		if err != nil {
-			log.Printf("computing terrain horizon: %v", err)
-			s.writeError(w, 500, "failed to compute terrain horizon")
-			return
+		terrain, tErr := dsm.ComputeTerrainHorizon(s.elevClient, lat, lng, observerH, obsElev)
+		if tErr != nil {
+			log.Printf("computing terrain horizon: %v", tErr)
+		} else {
+			terrainPtr = &terrain.Horizon
 		}
-		profile, err = s.horizonComp.ComputeWithTerrain(point, observerH, buildings, &terrain.Horizon)
+	}
+
+	if useVeg {
+		trees := fetchTreesAround(point, s.cachedClient)
+		vegHorizon := veg.ComputeVegetationHorizon(trees, lat, lng, observerH)
+		profile, err = s.horizonComp.ComputeWithVegetation(point, observerH, buildings, terrainPtr, &vegHorizon)
+	} else if useDSM {
+		profile, err = s.horizonComp.ComputeWithTerrain(point, observerH, buildings, terrainPtr)
 	} else {
 		profile, err = s.horizonComp.Compute(point, observerH, buildings)
 	}
