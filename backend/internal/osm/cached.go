@@ -9,11 +9,11 @@ import (
 
 type CachedClient struct {
 	Overpass *OverpassClient
-	Store    *store.Store
+	Store    store.Storage
 	Config   ParseConfig
 }
 
-func NewCachedClient(overpass *OverpassClient, st *store.Store, cfg ParseConfig) *CachedClient {
+func NewCachedClient(overpass *OverpassClient, st store.Storage, cfg ParseConfig) *CachedClient {
 	return &CachedClient{
 		Overpass: overpass,
 		Store:    st,
