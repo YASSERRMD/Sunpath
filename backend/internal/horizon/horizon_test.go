@@ -112,6 +112,34 @@ func TestObserverAboveBuildings(t *testing.T) {
 	}
 }
 
+func BenchmarkDenseUrbanCompute(b *testing.B) {
+	point := geo.Point{Lat: 48.8566, Lng: 2.3522}
+	var buildings []geo.Building
+
+	for i := 0; i < 500; i++ {
+		centerLat := point.Lat + float64(i%20)*0.001
+		centerLng := point.Lng + float64(i/20)*0.001
+		buildings = append(buildings, geo.Building{
+			OSMID:           int64(i + 1),
+			Height:          25.0,
+			HeightEstimated: false,
+			Footprint: geo.Polygon{
+				Points: []geo.Point{
+					{Lat: centerLat - 0.0005, Lng: centerLng - 0.0005},
+					{Lat: centerLat + 0.0005, Lng: centerLng - 0.0005},
+					{Lat: centerLat + 0.0005, Lng: centerLng + 0.0005},
+					{Lat: centerLat - 0.0005, Lng: centerLng + 0.0005},
+				},
+			},
+		})
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Compute(point, 1.5, buildings)
+	}
+}
+
 func TestSingleBuildingShadow(t *testing.T) {
 	point := geo.Point{Lat: 48.8566, Lng: 2.3522}
 	proj := geo.NewProj(point)
