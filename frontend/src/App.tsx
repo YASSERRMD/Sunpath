@@ -6,7 +6,10 @@ import PinInspector from './components/PinInspector'
 import KeyDates from './components/KeyDates'
 import ConfidenceBanner from './components/ConfidenceBanner'
 import AboutPanel from './components/AboutPanel'
-import { fetchHorizon } from './lib/api'
+import TimeSlider from './components/TimeSlider'
+import SunIndicator from './components/SunIndicator'
+import { fetchHorizon, fetchBuildings } from './lib/api'
+import type { BuildingOutline } from './lib/api'
 import { computeYear } from './lib/horizon'
 import { generateSummary } from './lib/summary'
 import { decodeState, updateURL } from './lib/urlstate'
@@ -25,9 +28,11 @@ function App() {
   const [height, setHeight] = useState(1.5)
   const [profile, setProfile] = useState<HorizonProfile | null>(null)
   const [year, setYear] = useState<YearResult | null>(null)
+  const [buildings, setBuildings] = useState<BuildingOutline[]>([])
   const [loadState, setLoadState] = useState<LoadState>('idle')
   const [loadError, setLoadError] = useState('')
   const [selectedDay, setSelectedDay] = useState(170)
+  const [timeFrac, setTimeFrac] = useState(0.5)
   const [offline, setOffline] = useState(!navigator.onLine)
 
   useEffect(() => {
@@ -67,9 +72,13 @@ function App() {
     setLoadState('loading')
     setLoadError('')
 
-    fetchHorizon(pin.lat, pin.lng, height)
-      .then((p) => {
+    Promise.all([
+      fetchHorizon(pin.lat, pin.lng, height),
+      fetchBuildings(pin.lat, pin.lng),
+    ])
+      .then(([p, b]) => {
         setProfile(p)
+        setBuildings(b)
         const y = computeYear(pin.lat, pin.lng, p)
         setYear(y)
         setLoadState('loaded')
@@ -89,6 +98,10 @@ function App() {
     ? year.days[selectedDay]
     : null
 
+  const sweepDate = pin
+    ? new Date(Date.UTC(2025, 0, selectedDay + 1, Math.floor(timeFrac * 24), Math.floor((timeFrac * 24 - Math.floor(timeFrac * 24)) * 60)))
+    : new Date()
+
   const summary = year && pin
     ? generateSummary(year, pin.lat, pin.lng, height)
     : ''
@@ -96,7 +109,7 @@ function App() {
   return (
     <div style={{ display: 'flex', width: '100vw', height: '100vh', overflow: 'hidden', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <div style={{ flex: 1, position: 'relative' }}>
-        <MapView pin={pin} onPinChange={handlePinChange} />
+        <MapView pin={pin} onPinChange={handlePinChange} sweepDate={sweepDate} buildings={buildings} />
       </div>
       <div style={{
         width: 400,
@@ -158,6 +171,12 @@ function App() {
               onDayChange={setSelectedDay}
               days={year.days}
             />
+
+            <TimeSlider selectedDay={selectedDay} onTimeChange={setTimeFrac} />
+
+            {profile && pin && (
+              <SunIndicator date={sweepDate} lat={pin.lat} lng={pin.lng} profile={profile} />
+            )}
 
             <KeyDates
               bestDay={year.bestDay}

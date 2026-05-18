@@ -35,6 +35,7 @@ func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/healthz", s.handleHealthz)
 	mux.HandleFunc("/api/horizon", cors(s.handleHorizon))
+	mux.HandleFunc("/api/buildings", cors(s.handleBuildings))
 	mux.HandleFunc("/api/geocode", cors(s.handleGeocode))
 	return withLogging(mux)
 }
