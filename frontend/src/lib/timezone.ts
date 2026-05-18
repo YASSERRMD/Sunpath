@@ -1,4 +1,4 @@
-export function resolveTimezone(lat: number, lng: number): string {
+export function resolveTimezone(_lat: number, lng: number): string {
   const offsetHours = Math.round(lng / 15)
   const sign = offsetHours >= 0 ? '+' : '-'
   const abs = Math.abs(offsetHours)
