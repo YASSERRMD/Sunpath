@@ -12,11 +12,9 @@ import ComparisonPanel from './components/ComparisonPanel'
 import TimeSlider from './components/TimeSlider'
 import InstallPrompt from './components/InstallPrompt'
 import SunIndicator from './components/SunIndicator'
-import { fetchHorizon, fetchBuildings, fetchGrid } from './lib/api'
-import type { GridCell, HorizonProfile } from './lib/api'
-import type { BuildingOutline } from './lib/api'
-import { fetchBatchHorizon } from './lib/api'
+import { fetchHorizon, fetchBuildings, fetchGrid, type HorizonProfile, type BuildingOutline, type GridCell, fetchBatchHorizon } from './lib/api'
 import { generateSummary } from './lib/summary'
+import { resolveTimezone } from './lib/timezone'
 import { decodeState, updateURL } from './lib/urlstate'
 import { useWorker } from './lib/useWorker'
 
@@ -76,6 +74,7 @@ function App() {
   const [offline, setOffline] = useState(!navigator.onLine)
   const [useDSM, setUseDSM] = useState(false)
   const [useVeg, setUseVeg] = useState(false)
+  const [timezone, setTimezone] = useState('UTC+00:00')
   const [gridCells, setGridCells] = useState<GridCell[]>([])
   const [gridLoading, setGridLoading] = useState(false)
   const [comparePins, setComparePins] = useState<PinState[]>([])
@@ -106,6 +105,7 @@ function App() {
     if (state) {
       setPin({ lat: state.lat, lng: state.lng })
       setHeight(state.h)
+      setTimezone(resolveTimezone(state.lat, state.lng))
     }
   }, [])
 
@@ -120,6 +120,7 @@ function App() {
     setProfile(null)
     setYear(null)
     setLoadState('idle')
+    setTimezone(resolveTimezone(p.lat, p.lng))
   }, [])
 
   const workerPost = useWorker(
@@ -198,7 +199,7 @@ function App() {
     : new Date()
 
   const summary = year && pin
-    ? generateSummary(year, pin.lat, pin.lng, height, useDSM)
+    ? generateSummary(year, pin.lat, pin.lng, height, useDSM, timezone)
     : ''
 
   if (embed) {
@@ -361,6 +362,7 @@ function App() {
               grid={year.grid}
               selectedDay={selectedDay}
               onDaySelect={setSelectedDay}
+              timezone={timezone}
             />
 
             <PinInspector
@@ -368,9 +370,10 @@ function App() {
               selectedDay={selectedDay}
               onDayChange={setSelectedDay}
               days={year.days}
+              timezone={timezone}
             />
 
-            <TimeSlider selectedDay={selectedDay} onTimeChange={setTimeFrac} />
+            <TimeSlider selectedDay={selectedDay} onTimeChange={setTimeFrac} timezone={timezone} />
 
             {profile && pin && (
               <SunIndicator date={sweepDate} lat={pin.lat} lng={pin.lng} profile={profile} />

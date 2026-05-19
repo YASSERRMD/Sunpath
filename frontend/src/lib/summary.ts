@@ -1,10 +1,14 @@
+import { formatMinutes } from './timezone'
+
 export function generateSummary(
   year: { days: { totalMinutes: number; firstSunMinute: number; lastSunMinute: number }[]; bestDay: number; worstDay: number },
   lat: number,
   lng: number,
   observerHeight: number,
-  useDSM?: boolean
+  useDSM?: boolean,
+  timezone?: string
 ): string {
+  const tz = timezone || 'UTC+00:00'
   const best = year.days[year.bestDay]
   const worst = year.days[year.worstDay]
   const fullyShaded = year.days.filter(d => d.totalMinutes === 0).length
@@ -17,8 +21,8 @@ export function generateSummary(
 
   const fmtRange = (d: { totalMinutes: number; firstSunMinute: number; lastSunMinute: number }) => {
     if (d.totalMinutes === 0 || d.firstSunMinute < 0) return 'no direct sun'
-    const first = `${pad(Math.floor(d.firstSunMinute / 60))}:${pad(d.firstSunMinute % 60)}`
-    const last = `${pad(Math.floor(d.lastSunMinute / 60))}:${pad(d.lastSunMinute % 60)}`
+    const first = formatMinutes(d.firstSunMinute, tz)
+    const last = formatMinutes(d.lastSunMinute, tz)
     return `${first} to ${last}`
   }
 
@@ -29,8 +33,4 @@ export function generateSummary(
     `and ${fmtRange(worst)} on the shadiest day (${fmt(worst.totalMinutes)} min)${note}`,
     `It is fully shaded all day on ${fullyShaded} day${fullyShaded !== 1 ? 's' : ''} of the year.`,
   ].join(' ')
-}
-
-function pad(n: number): string {
-  return n < 10 ? '0' + n : String(n)
 }

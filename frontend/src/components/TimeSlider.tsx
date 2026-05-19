@@ -1,11 +1,14 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { formatMinutes } from '../lib/timezone'
 
 interface TimeSliderProps {
   selectedDay: number
   onTimeChange: (hourFraction: number) => void
+  timezone?: string
 }
 
-export default function TimeSlider({ selectedDay: _selectedDay, onTimeChange }: TimeSliderProps) {
+export default function TimeSlider({ selectedDay: _selectedDay, onTimeChange, timezone }: TimeSliderProps) {
+  const tz = timezone || 'UTC+00:00'
   const [timeFrac, setTimeFrac] = useState(0.5)
   const [playing, setPlaying] = useState(false)
   const animRef = useRef<ReturnType<typeof requestAnimationFrame>>()
@@ -40,8 +43,7 @@ export default function TimeSlider({ selectedDay: _selectedDay, onTimeChange }: 
     onTimeChange(timeFrac)
   }, [timeFrac, onTimeChange])
 
-  const hours = Math.floor(timeFrac * 24)
-  const mins = Math.floor((timeFrac * 24 - hours) * 60)
+  const totalMinutes = Math.floor(timeFrac * 1440)
 
   return (
     <div style={{ marginBottom: 20 }}>
@@ -74,8 +76,8 @@ export default function TimeSlider({ selectedDay: _selectedDay, onTimeChange }: 
           style={{ flex: 1 }}
           aria-label="Time of day slider"
         />
-        <span style={{ fontSize: 14, fontFamily: 'monospace', minWidth: 50, textAlign: 'right' }}>
-          {String(hours).padStart(2, '0')}:{String(mins).padStart(2, '0')}
+        <span style={{ fontSize: 14, fontFamily: 'monospace', minWidth: 60, textAlign: 'right' }}>
+          {formatMinutes(totalMinutes, tz)}
         </span>
       </div>
     </div>

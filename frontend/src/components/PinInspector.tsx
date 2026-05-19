@@ -1,14 +1,17 @@
 import { useMemo } from 'react'
 import type { DayResult } from '../lib/horizon'
+import { formatMinutes } from '../lib/timezone'
 
 interface PinInspectorProps {
   dayResult: DayResult | null
   selectedDay: number
   onDayChange: (day: number) => void
   days: DayResult[]
+  timezone?: string
 }
 
-export default function PinInspector({ dayResult, selectedDay, onDayChange, days }: PinInspectorProps) {
+export default function PinInspector({ dayResult, selectedDay, onDayChange, days, timezone }: PinInspectorProps) {
+  const tz = timezone || 'UTC+00:00'
   const summary = useMemo(() => {
     if (!dayResult) return ''
     const h = Math.floor(dayResult.totalMinutes / 60)
@@ -21,6 +24,9 @@ export default function PinInspector({ dayResult, selectedDay, onDayChange, days
 
   return (
     <div>
+      <div style={{ marginBottom: 12, fontSize: 16, fontWeight: 600 }}>
+        {summary}
+      </div>
       <div style={{ marginBottom: 20 }}>
         <label style={{ fontSize: 12, fontWeight: 600, color: '#555', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Daily Sun Hours
@@ -34,68 +40,42 @@ export default function PinInspector({ dayResult, selectedDay, onDayChange, days
                 key={i}
                 onClick={() => onDayChange(i)}
                 style={{
-                  flex: 1,
-                  height: Math.max(h, 1),
-                  background: i === selectedDay ? '#e74c3c' : 'hsl(35, 80%, 45%)',
-                  borderRadius: '1px 1px 0 0',
-                  cursor: 'pointer',
-                  opacity: i === selectedDay ? 1 : 0.6,
+                  flex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+                  cursor: 'pointer', position: 'relative',
                 }}
-              />
+              >
+                <div style={{
+                  height: Math.max(h, 1), background: d.totalMinutes > 0 ? '#f39c12' : '#ddd',
+                  borderRadius: '1px 1px 0 0', opacity: i === selectedDay ? 1 : 0.6,
+                }} />
+              </div>
             )
           })}
         </div>
-      </div>
-
-      <div style={{ marginBottom: 20 }}>
-        <label style={{ fontSize: 12, fontWeight: 600, color: '#555', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Selected Day
-        </label>
-        <p style={{ fontSize: 14, margin: '4px 0 0 0' }}>
-          Day {selectedDay + 1} of 365
-        </p>
-        <p style={{ fontSize: 24, fontWeight: 700, margin: '4px 0', color: '#333' }}>
-          {summary}
-        </p>
-        {dayResult && (
-          <p style={{ fontSize: 13, color: '#666', margin: 0 }}>
-            First sun: {formatFirstSun(dayResult)} | Last sun: {formatLastSun(dayResult)}
-          </p>
-        )}
-      </div>
-
-      <div style={{ marginBottom: 20 }}>
-        <label style={{ fontSize: 12, fontWeight: 600, color: '#555', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Date Scrubber
-        </label>
-        <input
-          type="range"
-          min={0}
-          max={364}
-          value={selectedDay}
-          onChange={(e) => onDayChange(parseInt(e.target.value))}
-          aria-label={`Select day of year. Currently day ${selectedDay + 1}`}
-          style={{ width: '100%', marginTop: 4 }}
-        />
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#999' }}>
           <span>Jan 1</span>
           <span>Dec 31</span>
         </div>
       </div>
+
+      {dayResult && dayResult.totalMinutes > 0 && (
+        <div style={{ fontSize: 13, lineHeight: 1.6, color: '#2c3e50', marginBottom: 16, padding: '10px 14px', background: '#fef9e7', borderRadius: 6, border: '1px solid #f9e79f' }}>
+          <strong>First sun: {formatFirstSun(dayResult, tz)} &middot; Last sun: {formatLastSun(dayResult, tz)}</strong>
+          <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
+            Times shown in {tz}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-function formatFirstSun(day: DayResult): string {
+function formatFirstSun(day: DayResult, tz: string): string {
   if (day.firstSunMinute < 0) return '--:--'
-  return `${pad(Math.floor(day.firstSunMinute / 60))}:${pad(day.firstSunMinute % 60)}`
+  return formatMinutes(day.firstSunMinute, tz)
 }
 
-function formatLastSun(day: DayResult): string {
+function formatLastSun(day: DayResult, tz: string): string {
   if (day.lastSunMinute < 0) return '--:--'
-  return `${pad(Math.floor(day.lastSunMinute / 60))}:${pad(day.lastSunMinute % 60)}`
-}
-
-function pad(n: number): string {
-  return n < 10 ? '0' + n : String(n)
+  return formatMinutes(day.lastSunMinute, tz)
 }

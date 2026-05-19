@@ -1,9 +1,11 @@
 import React, { useRef, useEffect, useMemo } from 'react'
+import { formatMinutes } from '../lib/timezone'
 
 interface YearHeatmapProps {
   grid: number[][]
   selectedDay: number
   onDaySelect: (day: number) => void
+  timezone?: string
 }
 
 const CELL_W = 2
@@ -11,7 +13,8 @@ const CELL_H = 12
 const GAP = 0.5
 const MARGIN = { top: 20, right: 10, bottom: 30, left: 40 }
 
-export default function YearHeatmap({ grid, selectedDay, onDaySelect }: YearHeatmapProps) {
+export default function YearHeatmap({ grid, selectedDay, onDaySelect, timezone }: YearHeatmapProps) {
+  const tz = timezone || 'UTC+00:00'
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   const dims = useMemo(() => {
@@ -69,21 +72,20 @@ export default function YearHeatmap({ grid, selectedDay, onDaySelect }: YearHeat
     ctx.textAlign = 'right'
     for (let h = 0; h < 24; h += 3) {
       const y = MARGIN.top + h * (CELL_H + GAP) + CELL_H / 2 + 3
-      ctx.fillText(`${h}:00`, MARGIN.left - 4, y)
+      const label = formatMinutes(h * 60, tz)
+      ctx.fillText(label, MARGIN.left - 4, y)
     }
 
     ctx.fillStyle = '#999'
     ctx.textAlign = 'center'
     ctx.fillText('Day of year', dims.w / 2, dims.h - 6)
-  }, [grid, selectedDay, dims, monthLabels])
+  }, [grid, selectedDay, dims, monthLabels, tz])
 
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const rect = canvas.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const scaleX = canvas.width / rect.width
-    const doy = Math.round((x * scaleX - MARGIN.left) / (CELL_W + GAP))
+    const rect = canvasRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const x = e.clientX - rect.left - MARGIN.left
+    const doy = Math.round(x / (CELL_W + GAP))
     if (doy >= 0 && doy < 365) {
       onDaySelect(doy)
     }
@@ -92,15 +94,8 @@ export default function YearHeatmap({ grid, selectedDay, onDaySelect }: YearHeat
   return (
     <canvas
       ref={canvasRef}
-      style={{ width: '100%', maxWidth: dims.w, height: 'auto', cursor: 'pointer' }}
       onClick={handleClick}
-      role="img"
-      aria-label={`Solar heatmap showing sun and shade across the year. Day ${selectedDay + 1} of 365 is highlighted.`}
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'ArrowRight') onDaySelect(Math.min(selectedDay + 1, 364))
-        if (e.key === 'ArrowLeft') onDaySelect(Math.max(selectedDay - 1, 0))
-      }}
+      style={{ width: '100%', maxWidth: dims.w, cursor: 'pointer', marginBottom: 16 }}
     />
   )
 }
