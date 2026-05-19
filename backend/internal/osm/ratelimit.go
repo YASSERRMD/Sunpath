@@ -70,5 +70,8 @@ func (r *RateLimitedClient) DoRequest(method, urlStr string, body io.Reader) (*h
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
 	req.Header.Set("User-Agent", r.UserAgent)
+	if body != nil {
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	}
 	return r.Do(req)
 }

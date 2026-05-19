@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 type OverpassClient struct {
@@ -72,9 +73,9 @@ func (c *OverpassClient) FetchBuildings(minLat, minLng, maxLat, maxLng float64) 
 
 	params := url.Values{}
 	params.Set("data", query)
-	reqURL := c.BaseURL + "?" + params.Encode()
+	reqURL := c.BaseURL
 
-	resp, err := c.RateLimited.DoRequest("POST", reqURL, nil)
+	resp, err := c.RateLimited.DoRequest("POST", reqURL, strings.NewReader(params.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("overpass request: %w", err)
 	}
