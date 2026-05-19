@@ -10,6 +10,7 @@ import EmbedPanel from './components/EmbedPanel'
 import ProjectsPanel from './components/ProjectsPanel'
 import ComparisonPanel from './components/ComparisonPanel'
 import TimeSlider from './components/TimeSlider'
+import InstallPrompt from './components/InstallPrompt'
 import SunIndicator from './components/SunIndicator'
 import { fetchHorizon, fetchBuildings, fetchGrid } from './lib/api'
 import type { GridCell, HorizonProfile } from './lib/api'
@@ -225,6 +226,7 @@ function App() {
             {summary}
           </div>
         )}
+        <InstallPrompt />
       </div>
     )
   }
@@ -417,6 +419,7 @@ function App() {
         <EmbedPanel />
         <AboutPanel />
       </div>
+      <InstallPrompt />
     </div>
   )
 }
