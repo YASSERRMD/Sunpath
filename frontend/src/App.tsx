@@ -156,11 +156,7 @@ function App() {
       })
       .catch((err) => {
         const msg = err.message || ''
-        if (msg.includes('502') || msg.includes('fetch')) {
-          setLoadError('Building data is too thin in this area for a reliable analysis.')
-        } else {
-          setLoadError(msg || 'Failed to compute. Please try again.')
-        }
+        setLoadError(msg || 'Failed to compute. Please try again.')
         setLoadState('error')
       })
   }, [pin, height, offline, useDSM, useVeg])

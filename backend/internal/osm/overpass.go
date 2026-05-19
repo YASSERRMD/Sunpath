@@ -62,7 +62,7 @@ type OverpassBounds struct {
 }
 
 func (c *OverpassClient) FetchBuildings(minLat, minLng, maxLat, maxLng float64) (*OverpassResponse, error) {
-	query := fmt.Sprintf(`[out:json][timeout:25];
+	query := fmt.Sprintf(`[out:json][timeout:45];
 	(
 		node["building"](%f,%f,%f,%f);
 		way["building"](%f,%f,%f,%f);
@@ -83,6 +83,14 @@ func (c *OverpassClient) FetchBuildings(minLat, minLng, maxLat, maxLng float64) 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("reading response: %w", err)
+	}
+
+	if resp.StatusCode != 200 {
+		bodyStr := string(body)
+		if len(bodyStr) > 200 {
+			bodyStr = bodyStr[:200]
+		}
+		return nil, fmt.Errorf("overpass returned %d: %s", resp.StatusCode, bodyStr)
 	}
 
 	var result OverpassResponse

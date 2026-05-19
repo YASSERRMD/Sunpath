@@ -71,7 +71,7 @@ func (s *Server) handleHorizon(w http.ResponseWriter, r *http.Request) {
 	buildings, err := fetchBuildingsAround(point, s.cachedClient)
 	if err != nil {
 		log.Printf("fetching buildings: %v", err)
-		s.writeError(w, 502, "failed to fetch building data")
+		s.writeError(w, 502, err.Error())
 		return
 	}
 

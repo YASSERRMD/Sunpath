@@ -22,7 +22,7 @@ func NewRateLimitedClient(requestsPerSecond int) *RateLimitedClient {
 	interval := time.Second / time.Duration(requestsPerSecond)
 	r := &RateLimitedClient{
 		Client: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: 60 * time.Second,
 		},
 		UserAgent: "Sunpath/1.0 (solar analysis tool)",
 		Ticker:    time.NewTicker(interval),
@@ -51,11 +51,11 @@ func (r *RateLimitedClient) doWithRetry(req *http.Request, attempt int) (*http.R
 		return nil, err
 	}
 
-	if resp.StatusCode >= 500 && attempt < 3 {
+	if (resp.StatusCode == 429 || resp.StatusCode >= 500) && attempt < 3 {
 		resp.Body.Close()
-		backoff := time.Duration(math.Pow(2, float64(attempt+1))) * time.Second
-		if backoff > 10*time.Second {
-			backoff = 10 * time.Second
+		backoff := time.Duration(math.Pow(2, float64(attempt+2))) * time.Second
+		if backoff > 15*time.Second {
+			backoff = 15 * time.Second
 		}
 		time.Sleep(backoff)
 		return r.doWithRetry(req, attempt+1)
