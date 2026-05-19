@@ -21,7 +21,13 @@ self.addEventListener('activate', (event) => {
 })
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.url.includes('/api/')) {
+  const url = new URL(event.request.url)
+
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return
+  }
+
+  if (url.pathname.startsWith('/api/')) {
     return
   }
 
